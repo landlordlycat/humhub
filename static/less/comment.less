@@ -31,6 +31,49 @@
             display: none;
             right: -3px;
         }
+
+        &.comment-current {
+            background: @background-color-highlight;
+            padding: 0 5px 5px 5px;
+            margin: 0 -5px -5px -5px;
+            border-radius: 3px;
+
+            hr {
+                position: relative;
+                top: -6px;
+            }
+
+            &:first-of-type {
+                padding-top: 5px;
+                margin-top: -5px;
+
+                > .nav.preferences {
+                    margin-top: 10px;
+                }
+            }
+
+            > .nav.preferences {
+                margin-right: 10px;
+            }
+
+            .nested-comments-root {
+                .comment-container {
+                    margin-top: 5px;
+                    padding-bottom: 10px;
+
+                    .showMore {
+                        margin-top: 0;
+                        padding-top: 5px;
+                    }
+                }
+            }
+        }
+    }
+
+    .comment-blocked-user {
+        img[data-contentcontainer-id] {
+            filter: grayscale(100%);
+        }
     }
 
     /*-- Since v1.2 overflow: visible */
@@ -48,7 +91,7 @@
     }
 
     .post-file-list {
-        background-color: @background-color-page;
+        background-color: darken(@background-color-secondary, 2%);
     }
 }
 
@@ -65,61 +108,6 @@
     }
 }
 
-// fileupload button
-.comment_create,
-.content_edit {
-    position: relative;
-
-    .comment-buttons {
-        position: absolute;
-        bottom: 2px;
-        right: 5px;
-        z-index: 300;
-
-        button {
-            background-color: @link !important;
-            color: @text-color-contrast !important;
-        }
-    }
-
-    .has-error + .comment-buttons {
-        bottom: 19px !important;
-    }
-
-    .btn-comment-submit {
-        margin-top: 3px;
-    }
-
-    .fileinput-button {
-        float: left;
-        padding: 6px 10px;
-        background: transparent !important;
-
-        i {
-            color: @text-color-soft2;
-        }
-
-        i:hover {
-            color: @link;
-        }
-    }
-
-    .fileinput-button:hover i {
-        color: @link;
-    }
-
-    .fileinput-button:active {
-        box-shadow: none !important;
-    }
-}
-
-.post-richtext-input-group {
-    position: relative;
-
-    .comment-buttons {
-        bottom: 7px !important;
-    }
-}
 
 .comment-container .content_edit {
     margin-left: @commentLeftMargin;
@@ -145,22 +133,8 @@
     .text-break();
 }
 
-.comment-create-input-group, .post-richtext-input-group {
-    position: relative;
-
-    .ProsemirrorEditor {
-        .ProseMirror {
-            padding-right: 72px;
-        }
-    }
-
-    .form-group, .help-block {
-        margin:0;
-    }
-}
-
-.comment-create-input-group.scrollActive {
-    .comment-buttons {
+.content-create-input-group.scrollActive {
+    .upload-buttons {
         right: 22px;
     }
 }
@@ -184,10 +158,6 @@ div.comment > div.media:first-of-type {
     }
 }
 
-hr.comments-start-separator {
-    margin-top: 10px;
-}
-
 div.nested-comments-root {
     margin-left: 28px;
 
@@ -199,11 +169,7 @@ div.nested-comments-root {
         display: inherit !important;
     }
 
-    hr.comments-start-separator {
-        display: none;
-    }
-
-    a.show-all-link {
+    .showMore {
         margin-top: 10px;
     }
 

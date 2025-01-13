@@ -188,7 +188,7 @@ humhub.module('client', function (module, require, $) {
         } else if (cfg instanceof $.Event) {
             originalEvent = cfg;
             cfg = {};
-        } else if (!object.isString(url)) {
+        } else if (url && !object.isString(url)) {
             cfg = url;
             url = cfg.url;
         }
@@ -365,11 +365,7 @@ humhub.module('client', function (module, require, $) {
         history.back();
     };
 
-    var onBeforeLoad = function (form, msg) {
-
-        // Only one handler at the same time
-        offBeforeLoad();
-
+    var onBeforeLoad = function (form, msg, msgModal) {
         var $form = $(form);
 
         if (!$form.is('form')) {
@@ -383,11 +379,13 @@ humhub.module('client', function (module, require, $) {
         $form.data('state', serializeFormState($form));
 
         msg = msg || module.text('warn.onBeforeLoad');
+        msgModal = msgModal || module.text('warn.onBeforeCloseModal');
 
-        $form.on('submit', function () {
+        $form.resetChanges = function() {
             $form.data('state', null);
-            offBeforeLoad();
-        });
+        }
+        $form.on('submit', $form.resetChanges);
+        $form.find('[type=submit]').on('click', $form.resetChanges);
 
         // Note some browser do not support custom messages for this event.
         $(window).on('beforeunload.humhub_client', function () {
@@ -396,14 +394,23 @@ humhub.module('client', function (module, require, $) {
             }
         });
 
-        $(document).on('pjax:beforeSend.humhub_client', function (evt) {
-            if (unloadForm($form, msg)) {
-                $form.data('state', null);
-                offBeforeLoad();
+        var confirmFormChanges = function (evt, message) {
+            if (unloadForm($form, message)) {
+                $form.resetChanges();
             } else {
                 evt.preventDefault();
             }
-        })
+        }
+
+        $(document).on('pjax:beforeSend.humhub_client', function (evt) {
+            confirmFormChanges(evt, msg);
+        });
+
+        $(document).on('hide.bs.modal', '.modal', function (evt) {
+            if ($form.closest('.modal').length) {
+                confirmFormChanges(evt, msgModal);
+            }
+        });
     };
 
     var serializeFormState = function ($form) {
@@ -415,12 +422,28 @@ humhub.module('client', function (module, require, $) {
     };
 
     var formStateChanged = function ($form) {
+        $form.find(':focus').blur(); // Unfocus in order to update textarea value from RichText editor
         return $form.data('state') && $form.data('state') !== serializeFormState($form);
     };
 
     var confirmUnload = function (msg) {
+        if (!module.confirmedMessages) {
+            module.confirmedMessages = {};
+        }
+
         msg = msg || module.text('warn.onBeforeLoad');
-        return window.confirm(msg)
+
+        if (module.confirmedMessages[msg] && (Date.now() - module.confirmedMessages[msg].time < 100)) {
+            // Don't ask the same confirmation message twice if it was answered recently
+            // because several forms exist on the current page with confirm option
+            return module.confirmedMessages[msg].result;
+        }
+
+        var confirmedResult = window.confirm(msg);
+
+        module.confirmedMessages[msg] = {time: Date.now(), result: confirmedResult};
+
+        return confirmedResult;
     };
 
     var offBeforeLoad = function () {
@@ -450,10 +473,43 @@ humhub.module('client', function (module, require, $) {
                 onBeforeLoad($match, ($match.data('acknowledgeMessage') || null));
             });
 
+            checkContentSecurityPolicyViolation();
         } else {
             offBeforeLoad();
         }
     };
+
+    const checkContentSecurityPolicyViolation = function () {
+        if (typeof module.config.cspViolationReloadInterval === 'undefined' ||
+            module.config.cspViolationReloadInterval === 0) {
+            // The module is not configured to check the CSP errors
+            return;
+        }
+
+        window.addEventListener('securitypolicyviolation', function (event) {
+            // The directive "script-src" may be violated when nonce value has been recreated, e.g. after re-login in another browser tab
+            if (!event.violatedDirective.includes('script-src')) {
+                return;
+            }
+
+            const lastReloadTime = localStorage.getItem('cspViolationReloadTime');
+            const nextReloadTime = lastReloadTime
+                ? module.config.cspViolationReloadInterval * 1000 - (Date.now() - lastReloadTime)
+                : 0;
+
+            if (nextReloadTime > 0) {
+                // Skip because a previous reloading was less than required seconds ago, to avoid a looping
+                module.log.info('The directive "script-src" is violated. ' +
+                    'Next auto reloading will be forced in ' + Math.floor(nextReloadTime / 60000) + ' minutes.');
+                return;
+            }
+
+            // Reload the page to solve the issue of Content Security Policy
+            module.log.info('Force page reload. The directive "script-src" is violated because nonce is obsolete.');
+            localStorage.setItem('cspViolationReloadTime', Date.now().toString());
+            window.location.reload();
+        });
+    }
 
     module.export({
         ajax: ajax,
@@ -471,6 +527,7 @@ humhub.module('client', function (module, require, $) {
         onBeforeLoad: onBeforeLoad,
         offBeforeLoad: offBeforeLoad,
         unloadForm: unloadForm,
+        confirmUnload: confirmUnload,
         redirect: redirect
     });
 });

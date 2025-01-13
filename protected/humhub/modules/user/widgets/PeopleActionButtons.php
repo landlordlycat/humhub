@@ -1,4 +1,5 @@
 <?php
+
 /**
  * @link https://www.humhub.org/
  * @copyright Copyright (c) 2021 HumHub GmbH & Co. KG
@@ -13,13 +14,12 @@ use humhub\modules\user\models\User;
 
 /**
  * PeopleActionsButton shows directory options (following or friendship) for listed users
- * 
+ *
  * @since 1.9
  * @author Luke
  */
 class PeopleActionButtons extends Widget
 {
-
     /**
      * @var User
      */
@@ -35,13 +35,29 @@ class PeopleActionButtons extends Widget
      */
     public function run()
     {
-        $html = UserFollowButton::widget([
+        $html = $this->addFollowButton();
+        $html .= $this->addFriendshipButton();
+
+        if (trim($html) === '') {
+            return '';
+        }
+
+        return str_replace('{buttons}', $html, $this->template);
+    }
+
+
+    protected function addFollowButton(): string
+    {
+        return UserFollowButton::widget([
             'user' => $this->user,
             'followOptions' => ['class' => 'btn btn-primary btn-sm'],
             'unfollowOptions' => ['class' => 'btn btn-primary btn-sm active'],
         ]);
+    }
 
-        $html .= FriendshipButton::widget([
+    protected function addFriendshipButton(): string
+    {
+        return FriendshipButton::widget([
             'user' => $this->user,
             'options' => [
                 'friends' => ['attrs' => ['class' => 'btn btn-info btn-sm active']],
@@ -50,12 +66,6 @@ class PeopleActionButtons extends Widget
                 'cancelFriendRequest' => ['attrs' => ['class' => 'btn btn-info btn-sm active']],
             ],
         ]);
-
-        if (trim($html) === '') {
-            return '';
-        }
-
-        return str_replace('{buttons}', $html, $this->template);
     }
 
 }

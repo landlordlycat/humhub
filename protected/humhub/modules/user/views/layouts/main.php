@@ -3,15 +3,16 @@
 use humhub\assets\AppAsset;
 use humhub\widgets\FooterMenu;
 use yii\helpers\Html;
+use yii\web\View;
 
-/* @var $this \yii\web\View */
+/* @var $this View */
 /* @var $content string */
 
 AppAsset::register($this);
 ?>
 <?php $this->beginPage() ?>
 <!DOCTYPE html>
-<html lang="en">
+<html lang="<?= Yii::$app->language ?>">
 <head>
     <title><?= Html::encode($this->pageTitle); ?></title>
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
@@ -23,7 +24,7 @@ AppAsset::register($this);
 <body class="login-container">
 <?php $this->beginBody() ?>
 <?= $content; ?>
-<br />
+<br/>
 <?= FooterMenu::widget(['location' => FooterMenu::LOCATION_LOGIN]); ?>
 <?php $this->endBody() ?>
 </body>

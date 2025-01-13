@@ -1,4 +1,5 @@
 <?php
+
 /**
  * @link https://www.humhub.org/
  * @copyright Copyright (c) 2021 HumHub GmbH & Co. KG
@@ -20,7 +21,6 @@ use yii\data\Pagination;
  */
 class SpaceDirectoryQuery extends ActiveQuerySpace
 {
-
     /**
      * @var Pagination
      */
@@ -30,6 +30,8 @@ class SpaceDirectoryQuery extends ActiveQuerySpace
      * @var int
      */
     public $pageSize = 25;
+
+    public array $defaultFilters = [];
 
     /**
      * @inheritdoc
@@ -48,6 +50,7 @@ class SpaceDirectoryQuery extends ActiveQuerySpace
 
         $this->visible();
 
+        $this->filterBlockedSpaces();
         $this->filterByKeyword();
         $this->filterByConnection();
 
@@ -58,14 +61,18 @@ class SpaceDirectoryQuery extends ActiveQuerySpace
 
     public function filterByKeyword(): SpaceDirectoryQuery
     {
-        $keyword = Yii::$app->request->get('keyword', '');
+        $keyword = Yii::$app->request->get('keyword', $this->defaultFilters['keyword'] ?? '');
 
         return $this->search($keyword);
     }
 
     public function filterByConnection(): SpaceDirectoryQuery
     {
-        switch (Yii::$app->request->get('connection')) {
+        $connection = Yii::$app->request->get('connection', $this->defaultFilters['connection'] ?? null);
+
+        $this->filterByConnectionArchived($connection === 'archived');
+
+        switch ($connection) {
             case 'member':
                 return $this->filterByConnectionMember();
             case 'follow':
@@ -101,15 +108,26 @@ class SpaceDirectoryQuery extends ActiveQuerySpace
             ]);
     }
 
+    public function filterByConnectionArchived(bool $showArchived = false): SpaceDirectoryQuery
+    {
+        return $this->andWhere('space.status ' . ($showArchived ? '=' : '!=') . ' :spaceStatus', [
+            ':spaceStatus' => Space::STATUS_ARCHIVED,
+        ]);
+    }
+
     public function order(): SpaceDirectoryQuery
     {
         switch (SpaceDirectoryFilters::getValue('sort')) {
+            case 'sortOrder':
+                $this->defaultOrderBy();
+                break;
+
             case 'name':
                 $this->addOrderBy('space.name');
                 break;
 
             case 'newer':
-                $this->addOrderBy('space.created_at DESC');
+                $this->addOrderBy(['space.created_at' => SORT_DESC]);
                 break;
 
             case 'older':

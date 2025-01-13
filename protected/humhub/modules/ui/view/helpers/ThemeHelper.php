@@ -8,11 +8,11 @@
 
 namespace humhub\modules\ui\view\helpers;
 
+use Exception;
 use humhub\modules\ui\view\components\Theme;
 use Yii;
 use yii\base\InvalidConfigException;
 use yii\helpers\ArrayHelper;
-
 
 /**
  * ThemeHelper
@@ -42,7 +42,12 @@ class ThemeHelper
         // Collect themes provided by modules
         foreach (Yii::$app->getModules() as $id => $module) {
             if (is_array($module) || is_string($module)) {
-                $module = Yii::$app->getModule($id);
+                try {
+                    $module = Yii::$app->getModule($id);
+                } catch (Exception $ex) {
+                    Yii::error('Could not load module to fetch themes! Module: ' . $id . ' Error: ' . $ex->getMessage(), 'ui');
+                    continue;
+                }
             }
 
             $moduleThemePath = $module->getBasePath() . DIRECTORY_SEPARATOR . 'themes';
@@ -50,8 +55,9 @@ class ThemeHelper
                 $themes = ArrayHelper::merge(
                     $themes,
                     self::getThemesByPath(
-                        $moduleThemePath, ['publishResources' => true]
-                    )
+                        $moduleThemePath,
+                        ['publishResources' => true],
+                    ),
                 );
             }
         }
@@ -70,6 +76,7 @@ class ThemeHelper
     public static function getThemesByPath($path, $additionalOptions = [])
     {
         $themes = [];
+        $path = realpath($path);
         foreach (scandir($path) as $file) {
             if ($file == "." || $file == ".." || !is_dir($path . DIRECTORY_SEPARATOR . $file)) {
                 continue;
@@ -99,7 +106,7 @@ class ThemeHelper
                 'class' => 'humhub\modules\ui\view\components\Theme',
                 'basePath' => $path,
                 'name' => basename($path),
-                'publishResources' => (dirname($path) !== Yii::getAlias('@themes'))
+                'publishResources' => (dirname($path) !== Yii::getAlias('@themes')),
             ], $options));
         } catch (InvalidConfigException $e) {
             Yii::error('Could not get theme by path "' . $path . '" - Error: ' . $e->getMessage());
@@ -152,7 +159,7 @@ class ThemeHelper
      * Returns an array of all used themes
      *
      * @param Theme $theme
-     * @param boolean $includeBaseTheme should the given theme also included in the theme tree
+     * @param bool $includeBaseTheme should the given theme also included in the theme tree
      * @return Theme[] the parent themes
      */
     public static function getThemeTree(Theme $theme, $includeBaseTheme = true)
@@ -188,7 +195,7 @@ class ThemeHelper
         $themes = static::getThemes();
 
         $variables = LessHelper::parseLessVariables(
-            LessHelper::getVariableFile($theme)
+            LessHelper::getVariableFile($theme),
         );
 
         if (isset($variables['baseTheme']) && isset($themes[$variables['baseTheme']]) && $variables['baseTheme'] !== $theme->name) {

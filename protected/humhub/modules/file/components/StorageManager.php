@@ -8,10 +8,12 @@
 
 namespace humhub\modules\file\components;
 
+use Exception;
 use humhub\modules\file\models\File;
 use humhub\modules\file\libs\FileHelper;
 use Yii;
 use yii\base\Component;
+use yii\helpers\ArrayHelper;
 use yii\imagine\Image;
 use yii\web\UploadedFile;
 
@@ -23,7 +25,6 @@ use yii\web\UploadedFile;
  */
 class StorageManager extends Component implements StorageManagerInterface
 {
-
     /**
      * @var string file name of the base file (without variant)
      */
@@ -35,7 +36,7 @@ class StorageManager extends Component implements StorageManagerInterface
     protected $storagePath = '@filestore';
 
     /**
-     * @var integer file mode
+     * @var int file mode
      */
     public $fileMode = 0744;
 
@@ -43,6 +44,14 @@ class StorageManager extends Component implements StorageManagerInterface
      * @var File
      */
     protected $file;
+
+    /**
+     * @inheritdoc
+     */
+    public function has($variant = null): bool
+    {
+        return file_exists($this->get($variant));
+    }
 
     /**
      * @inheritdoc
@@ -59,16 +68,14 @@ class StorageManager extends Component implements StorageManagerInterface
     /**
      * @inheritdoc
      */
-    public function getVariants()
+    public function getVariants($except = [])
     {
-        $variants = [];
-        foreach (scandir($this->getPath()) as $file) {
-            if (!in_array($file, [$this->originalFileName, '.', '..'])) {
-                $variants[] = $file;
-            }
-        }
-
-        return $variants;
+        return array_map(
+            function (string $s): string {
+                return basename($s);
+            },
+            FileHelper::findFiles($this->getPath(), ['except' => ArrayHelper::merge(['file'], $except)]),
+        );
     }
 
     /**
@@ -79,7 +86,6 @@ class StorageManager extends Component implements StorageManagerInterface
         if (is_uploaded_file($file->tempName)) {
             move_uploaded_file($file->tempName, $this->get($variant));
             @chmod($this->get($variant), $this->fileMode);
-            $this->file->saveHash();
         }
     }
 
@@ -90,27 +96,34 @@ class StorageManager extends Component implements StorageManagerInterface
     {
         file_put_contents($this->get($variant), $content);
         @chmod($this->get($variant), $this->fileMode);
-        $this->file->saveHash();
     }
 
     /**
      * @inheritdoc
      */
-    public function delete($variant = null)
+    public function setByPath(string $path, $variant = null)
+    {
+        copy($path, $this->get($variant));
+        @chmod($this->get($variant), $this->fileMode);
+    }
+
+
+    /**
+     * @inheritdoc
+     */
+    public function delete($variant = null, $except = [])
     {
         if ($variant === null) {
-            $path = $this->getPath();
-
-            // Make really sure, that we dont delete something else :-)
-            if ($this->file->guid != '' && is_dir($path)) {
-                $files = glob($path . DIRECTORY_SEPARATOR . '*');
-                foreach ($files as $file) {
-                    if (is_file($file)) {
-                        FileHelper::unlink($file);
-                    }
+            foreach (FileHelper::findFiles($this->getPath(), ['except' => $except]) as $f) {
+                if (is_file($f)) {
+                    FileHelper::unlink($f);
                 }
-                FileHelper::removeDirectory($path);
             }
+
+            if (empty($except)) {
+                FileHelper::removeDirectory($this->getPath());
+            }
+
         } elseif (is_file($this->get($variant))) {
             FileHelper::unlink($this->get($variant));
         }
@@ -132,7 +145,7 @@ class StorageManager extends Component implements StorageManagerInterface
     protected function getPath()
     {
         if ($this->file->guid == '') {
-            throw new \Exception('File GUID empty!');
+            throw new Exception('File GUID empty!');
         }
 
         $basePath = Yii::getAlias($this->storagePath);

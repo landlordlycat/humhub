@@ -11,7 +11,6 @@ namespace humhub\modules\admin\grid;
 use Yii;
 use humhub\libs\ActionColumn;
 use humhub\modules\user\models\User;
-use humhub\modules\admin\controllers\UserController;
 
 /**
  * UserActionColumn
@@ -20,7 +19,6 @@ use humhub\modules\admin\controllers\UserController;
  */
 class UserActionColumn extends ActionColumn
 {
-
     /**
      * @inheritdoc
      */
@@ -34,7 +32,7 @@ class UserActionColumn extends ActionColumn
         } else {
             $actions[Yii::t('base', 'Edit')] = ['edit'];
 
-            if(Yii::$app->user->isAdmin() || !$model->isSystemAdmin()) {
+            if (Yii::$app->user->isAdmin() || !$model->isSystemAdmin()) {
                 $actions[] = '---';
                 if ($model->status == User::STATUS_DISABLED) {
                     $actions[Yii::t('AdminModule.user', 'Enable')] = ['enable', 'linkOptions' => ['data-method' => 'post', 'data-confirm' => Yii::t('AdminModule.user', 'Are you really sure that you want to enable this user?')]];
@@ -49,7 +47,7 @@ class UserActionColumn extends ActionColumn
 
             if ($model->status == User::STATUS_ENABLED) {
                 $actions[] = '---';
-                if (UserController::canImpersonate($model)) {
+                if (Yii::$app->user->canImpersonate($model)) {
                     $actions[Yii::t('AdminModule.user', 'Impersonate')] = ['impersonate', 'linkOptions' => ['data-method' => 'post', 'data-confirm' => Yii::t('AdminModule.user', 'Are you really sure that you want to impersonate this user?')]];
                 }
                 $actions[Yii::t('AdminModule.user', 'View profile')] = ['view-profile'];

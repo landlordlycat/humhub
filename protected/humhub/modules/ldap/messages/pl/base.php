@@ -1,7 +1,6 @@
 <?php
 
 return [
-    'A TLS/SSL is strongly favored in production environments to prevent passwords from be transmitted in clear text.' => 'TLS/SSL jest bardzo preferowany na produkcji w celu zapobiegania wysyłania haseł otwartym tekstem.',
     'Base DN' => 'Bazowy DN',
     'Defines the filter to apply, when login is attempted. %s replaces the username in the login action. Example: &quot;(sAMAccountName=%s)&quot; or &quot;(uid=%s)&quot;' => 'Ustala filtr do zastosowania, gdy dojdzie do próby logowania. %s zastępuje nazwę użytkownika w trakcie logowania. Przykład: "(sAMAccountName=%s)" or "(uid=%s)"',
     'E-Mail Address Attribute' => 'Atrybut Adres E-Mail',
@@ -10,12 +9,14 @@ return [
     'Fetch/Update Users Automatically' => 'Automatyczne Pobierz/Aktualizuj Użytkowników',
     'Hostname' => 'Nazwa Hosta',
     'ID Attribute' => 'Atrybut ID',
+    'Ignored LDAP entries' => 'Ignorowane wpisy LDAP',
     'LDAP' => 'LDAP',
     'LDAP Attribute for E-Mail Address. Default: &quot;mail&quot;' => 'Atrybut LADP dla adresu E-Mail. Domyślny "mail"',
     'LDAP Attribute for Username. Example: &quot;uid&quot; or &quot;sAMAccountName&quot;' => 'Atrybut LADP dla Użytkownika. Przykład: "uid" lub "sAMAccountName"',
     'Limit access to users meeting this criteria. Example: &quot;(objectClass=posixAccount)&quot; or &quot;(&(objectClass=person)(memberOf=CN=Workers,CN=Users,DC=myDomain,DC=com))&quot;' => 'Ogranicz dostęp do użytkowników spełniających te kryteria. Przykład: "(objectClass=posixAccount)" lub "(&amp;(objectClass=person)(memberOf=CN=Workers,CN=Users,DC=myDomain,DC=com))"',
     'Login Filter' => 'Filtr Loginów',
     'Not changeable LDAP attribute to unambiguously identify the user in the directory. If empty the user will be determined automatically by e-mail address or username. Examples: objectguid (ActiveDirectory) or uidNumber (OpenLDAP)' => 'Niezmienny atrybut LDAP do jednoznacznego identyfikowania użytkowników w katalogu. Jeżeli puste użytkownik ozstanie zidentyfikowany automatycznie prze adres e-mail lub nazwę użytkownika. Przykład: objectguid (ActiveDirectory) lub uidNumber (OpenLDAP)',
+    'One DN per line which should not be imported automatically.' => 'Jedno DN w linii które nie powinno zostać zaimportowane automatycznie.',
     'Password' => 'Hasło',
     'Port' => 'Port',
     'Specify your LDAP-backend used to fetch user accounts.' => 'Wybiera',
@@ -28,6 +29,4 @@ return [
     'User Filter' => 'Filtr użytkowników',
     'Username' => 'Nazwa Użytkownika',
     'Username Attribute' => 'Atrybut Nazwy Użytkownika',
-    'Ignored LDAP entries' => '',
-    'One DN per line which should not be imported automatically.' => '',
 ];

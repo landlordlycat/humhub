@@ -21,7 +21,6 @@ use yii\i18n\I18N as BaseI18N;
  */
 class I18N extends BaseI18N
 {
-
     /**
      * @var string path which contains message overwrites
      */
@@ -50,7 +49,7 @@ class I18N extends BaseI18N
      */
     public function autosetLocale()
     {
-        if (!Yii::$app->params['installed'] || Yii::$app->user->isGuest) {
+        if (!Yii::$app->isInstalled() || Yii::$app->user->isGuest) {
             $this->setGuestLocale();
         } else {
             $this->setUserLocale(Yii::$app->user->getIdentity());
@@ -75,12 +74,7 @@ class I18N extends BaseI18N
             $this->setDefaultLocale();
         }
 
-        if (!empty($user->time_zone)) {
-            Yii::$app->formatter->timeZone = $user->time_zone;
-        } else {
-            Yii::$app->formatter->timeZone = Yii::$app->timeZone;
-        }
-
+        Yii::$app->formatter->timeZone = $user->time_zone;
         Yii::$app->formatter->defaultTimeZone = Yii::$app->timeZone;
     }
 
@@ -164,7 +158,7 @@ class I18N extends BaseI18N
             if (substr($category, 0, strlen($moduleCategory)) === $moduleCategory) {
                 $this->translations[$moduleCategory . '*'] = [
                     'class' => 'humhub\components\i18n\ModuleMessageSource',
-                    'moduleId' => $moduleId
+                    'moduleId' => $moduleId,
                 ];
             }
         }
@@ -190,6 +184,26 @@ class I18N extends BaseI18N
         }
 
         return $availableLanguages;
+    }
+
+    /**
+     * Check if the provided or browser language is allowed in system, otherwise return default language
+     *
+     * @since 1.12.2
+     * @param string|null $language NULL - to get a language from browser
+     * @return string|null
+     */
+    public function getAllowedLanguage(?string $language = null): ?string
+    {
+        if (empty($language)) {
+            $language = Yii::$app->language;
+        }
+
+        if (array_key_exists($language, $this->getAllowedLanguages())) {
+            return $language;
+        }
+
+        return Yii::$app->settings->get('defaultLanguage');
     }
 
     /**

@@ -1,4 +1,5 @@
 <?php
+
 /**
  * @link https://www.humhub.org/
  * @copyright Copyright (c) 2021 HumHub GmbH & Co. KG
@@ -13,8 +14,8 @@ use humhub\modules\content\components\ContentContainerActiveRecord;
 /**
  * Class ContentContainerTagRelation
  *
- * @property integer $contentcontainer_id
- * @property integer $tag_id
+ * @property int $contentcontainer_id
+ * @property int $tag_id
  *
  * @since 1.9
  */
@@ -66,6 +67,8 @@ class ContentContainerTagRelation extends ActiveRecord
             return;
         }
 
+        $newTags = array_unique($newTags);
+
         $existingTags = ContentContainerTag::find()
             ->select(['id', 'name'])
             ->where(['IN', 'name', $newTags])
@@ -94,7 +97,7 @@ class ContentContainerTagRelation extends ActiveRecord
         }
 
         $contentContainer->contentContainerRecord->updateAttributes([
-            'tags_cached' => implode(', ', ContentContainerTagRelation::getNamesByContainer($contentContainer))
+            'tags_cached' => implode(', ', ContentContainerTagRelation::getNamesByContainer($contentContainer)),
         ]);
     }
 
@@ -115,7 +118,7 @@ class ContentContainerTagRelation extends ActiveRecord
         }
 
         $contentContainer->contentContainerRecord->updateAttributes([
-            'tags_cached' => null
+            'tags_cached' => null,
         ]);
     }
 }

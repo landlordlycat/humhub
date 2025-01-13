@@ -1,8 +1,8 @@
 <?php
-
-return [
-    'Collapse' => 'Minimizar',
-    'Read more' => 'Consulte Mais informação',
-    'User Interface' => 'Interface de usuário',
-    'Reset filters' => '',
-];
+return array (
+  'Collapse' => 'Minimizar',
+  'Read more' => 'Leia mais',
+  'Reset filters' => 'Redefinir filtros',
+  'Select' => 'Selecione',
+  'User Interface' => 'Interface de usuário',
+);

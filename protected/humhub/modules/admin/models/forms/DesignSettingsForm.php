@@ -8,16 +8,16 @@
 
 namespace humhub\modules\admin\models\forms;
 
-use humhub\modules\file\Module;
+use humhub\libs\DynamicConfig;
+use humhub\libs\LogoImage;
 use humhub\modules\file\validators\ImageSquareValidator;
 use humhub\modules\stream\actions\Stream;
+use humhub\modules\ui\view\helpers\ThemeHelper;
+use humhub\modules\user\models\ProfileField;
 use humhub\modules\web\pwa\widgets\SiteIcon;
 use Yii;
 use yii\base\Model;
 use yii\web\UploadedFile;
-use humhub\libs\LogoImage;
-use humhub\libs\DynamicConfig;
-use humhub\modules\ui\view\helpers\ThemeHelper;
 
 /**
  * DesignSettingsForm
@@ -26,18 +26,16 @@ use humhub\modules\ui\view\helpers\ThemeHelper;
  */
 class DesignSettingsForm extends Model
 {
-
     public $theme;
     public $paginationSize;
-    public $displayName;
+    public $displayNameFormat;
+    public $displayNameSubFormat;
     public $spaceOrder;
     public $logo;
     public $icon;
     public $dateInputDisplayFormat;
     public $horImageScrollOnMobile;
-    public $useDefaultSwipeOnMobile;
     public $defaultStreamSort;
-
 
     /**
      * @inheritdoc
@@ -50,13 +48,12 @@ class DesignSettingsForm extends Model
 
         $this->theme = Yii::$app->view->theme->name;
         $this->paginationSize = $settingsManager->get('paginationSize');
-        $this->displayName = $settingsManager->get('displayNameFormat');
+        $this->displayNameFormat = $settingsManager->get('displayNameFormat');
+        $this->displayNameSubFormat = $settingsManager->get('displayNameSubFormat');
         $this->spaceOrder = Yii::$app->getModule('space')->settings->get('spaceOrder');
         $this->dateInputDisplayFormat = Yii::$app->getModule('admin')->settings->get('defaultDateInputFormat');
         $this->horImageScrollOnMobile = $settingsManager->get('horImageScrollOnMobile');
-        $this->useDefaultSwipeOnMobile = $settingsManager->get('useDefaultSwipeOnMobile');
         $this->defaultStreamSort = Yii::$app->getModule('stream')->settings->get('defaultSort');
-
     }
 
     /**
@@ -64,17 +61,15 @@ class DesignSettingsForm extends Model
      */
     public function rules()
     {
-        /** @var Module $fileModule */
-        $fileModule = Yii::$app->getModule('file');
-
         return [
+            ['paginationSize', 'required'],
             ['paginationSize', 'integer', 'max' => 200, 'min' => 1],
             ['theme', 'in', 'range' => $this->getThemes()],
-            [['displayName', 'spaceOrder'], 'safe'],
-            [['horImageScrollOnMobile', 'useDefaultSwipeOnMobile'], 'boolean'],
-            ['logo', 'image', 'extensions' => 'png, jpg, jpeg',  'minWidth' => 100, 'minHeight' => 120],
+            [['displayNameFormat', 'displayNameSubFormat', 'spaceOrder'], 'safe'],
+            [['horImageScrollOnMobile'], 'boolean'],
+            ['logo', 'image', 'extensions' => 'png, jpg, jpeg', 'minWidth' => 100, 'minHeight' => 120],
             [['defaultStreamSort'], 'in', 'range' => array_keys($this->getDefaultStreamSortOptions())],
-            ['icon', 'image', 'extensions' => 'png, jpg, jpeg',  'minWidth' => 256, 'minHeight' => 256],
+            ['icon', 'image', 'extensions' => 'png, jpg, jpeg', 'minWidth' => 256, 'minHeight' => 256],
             ['icon', ImageSquareValidator::class],
             ['dateInputDisplayFormat', 'in', 'range' => ['', 'php:d/m/Y']],
         ];
@@ -88,16 +83,25 @@ class DesignSettingsForm extends Model
         return [
             'theme' => Yii::t('AdminModule.settings', 'Theme'),
             'paginationSize' => Yii::t('AdminModule.settings', 'Default pagination size (Entries per page)'),
-            'displayName' => Yii::t('AdminModule.settings', 'Display Name (Format)'),
-            'spaceOrder' => Yii::t('AdminModule.settings', 'Dropdown space order'),
+            'displayNameFormat' => Yii::t('AdminModule.settings', 'User Display Name'),
+            'displayNameSubFormat' => Yii::t('AdminModule.settings', 'User Display Name Subtitle'),
+            'spaceOrder' => Yii::t('AdminModule.settings', '"My Spaces" Sorting'),
             'logo' => Yii::t('AdminModule.settings', 'Logo upload'),
             'icon' => Yii::t('AdminModule.settings', 'Icon upload'),
             'dateInputDisplayFormat' => Yii::t('AdminModule.settings', 'Date input format'),
             'horImageScrollOnMobile' => Yii::t('AdminModule.settings', 'Horizontal scrolling images on a mobile device'),
-            'useDefaultSwipeOnMobile' => Yii::t('AdminModule.settings', 'Use the default swipe to show sidebar on a mobile device'),
         ];
     }
 
+    /**
+     * @inerhitdoc
+     */
+    public function attributeHints()
+    {
+        return [
+            'spaceOrder' => Yii::t('AdminModule.settings', 'Custom sort order can be defined in the Space advanced settings.'),
+        ];
+    }
 
     /**
      * @inheritdoc
@@ -122,7 +126,8 @@ class DesignSettingsForm extends Model
     /**
      * @return array a list of available themes
      */
-    public function getThemes() {
+    public function getThemes()
+    {
         $themes = [];
 
         foreach (ThemeHelper::getThemes() as $theme) {
@@ -135,7 +140,7 @@ class DesignSettingsForm extends Model
     /**
      * Saves the form
      *
-     * @return boolean
+     * @return bool
      */
     public function save()
     {
@@ -147,11 +152,11 @@ class DesignSettingsForm extends Model
         }
 
         $settingsManager->set('paginationSize', $this->paginationSize);
-        $settingsManager->set('displayNameFormat', $this->displayName);
+        $settingsManager->set('displayNameFormat', $this->displayNameFormat);
+        $settingsManager->set('displayNameSubFormat', $this->displayNameSubFormat);
         Yii::$app->getModule('space')->settings->set('spaceOrder', $this->spaceOrder);
         Yii::$app->getModule('admin')->settings->set('defaultDateInputFormat', $this->dateInputDisplayFormat);
         $settingsManager->set('horImageScrollOnMobile', $this->horImageScrollOnMobile);
-        $settingsManager->set('useDefaultSwipeOnMobile', $this->useDefaultSwipeOnMobile);
 
         Yii::$app->getModule('stream')->settings->set('defaultSort', $this->defaultStreamSort);
 
@@ -180,4 +185,17 @@ class DesignSettingsForm extends Model
         ];
     }
 
+    /**
+     * Returns a list of possible subtitle attribute names
+     *
+     * @return array
+     */
+    public function getDisplayNameSubAttributes()
+    {
+        $availableAttributes = [];
+        foreach (ProfileField::find()->all() as $profileField) {
+            $availableAttributes[$profileField->internal_name] = $profileField->title;
+        }
+        return $availableAttributes;
+    }
 }

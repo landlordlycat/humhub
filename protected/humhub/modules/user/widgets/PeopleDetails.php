@@ -1,4 +1,5 @@
 <?php
+
 /**
  * @link https://www.humhub.org/
  * @copyright Copyright (c) 2021 HumHub GmbH & Co. KG
@@ -10,16 +11,16 @@ namespace humhub\modules\user\widgets;
 use humhub\components\Widget;
 use humhub\modules\user\models\ProfileField;
 use humhub\modules\user\models\User;
+use yii\helpers\StringHelper;
 
 /**
  * PeopleDetails shows details for back side of the people card
- * 
+ *
  * @since 1.9
  * @author Luke
  */
 class PeopleDetails extends Widget
 {
-
     /**
      * @var User
      */
@@ -67,16 +68,24 @@ class PeopleDetails extends Widget
             return false;
         }
 
-        $profileField = ProfileField::find()
-            ->where(['visible' => 1])
-            ->andWhere(['internal_name' => $internalName])
-            ->one();
+        static $profileFields;
 
-        if (!$profileField) {
+        if (!is_array($profileFields)) {
+            $profileFields = [];
+        }
+
+        if (!array_key_exists($internalName, $profileFields)) {
+            $profileFields[$internalName] = ProfileField::find()
+                ->where(['visible' => 1])
+                ->andWhere(['internal_name' => $internalName])
+                ->one();
+        }
+
+        if (!$profileFields[$internalName]) {
             return false;
         }
 
-        return $profileField->getUserValue($this->user, false);
+        return StringHelper::truncate($profileFields[$internalName]->getUserValue($this->user, false), 200, '...', null, true);
     }
 
 }

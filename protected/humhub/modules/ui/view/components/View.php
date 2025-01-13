@@ -16,13 +16,18 @@ use humhub\modules\web\pwa\widgets\LayoutHeader;
 use humhub\modules\web\pwa\widgets\SiteIcon;
 use humhub\widgets\CoreJsConfig;
 use humhub\widgets\LayoutAddons;
-use yii\helpers\ArrayHelper;
 use Yii;
+use yii\helpers\ArrayHelper;
 
 /**
  * Class View
  *
  * @property Theme $theme the Theme component
+ * @property ViewMeta $meta The View Meta Service
+ * @property-write mixed $viewContext
+ * @property-read string $sidebar
+ * @property-read string $pageTitle
+ *
  * @inheritdoc
  */
 class View extends \yii\web\View
@@ -30,7 +35,7 @@ class View extends \yii\web\View
     /**
      * the id of the sidebar block
      */
-    const BLOCK_SIDEBAR = 'sidebar';
+    public const BLOCK_SIDEBAR = 'sidebar';
 
     /**
      * @var string page title
@@ -84,14 +89,32 @@ class View extends \yii\web\View
      */
     private static $viewContext;
 
+
+    private $_viewMeta;
+
+
+    /**
+     * @return ViewMeta
+     */
+    public function getMeta()
+    {
+        if ($this->_viewMeta === null) {
+            $this->_viewMeta = new ViewMeta(['view' => $this]);
+        }
+
+        return $this->_viewMeta;
+    }
+
+
     /**
      * Sets current page title
      *
      * @param string $title
+     * @param bool $prepend
      */
-    public function setPageTitle($title)
+    public function setPageTitle($title, $prepend = false)
     {
-        $this->_pageTitle = $title;
+        $this->_pageTitle = ($prepend) ? $title . ' - ' . $this->_pageTitle : $title;
     }
 
     /**
@@ -165,6 +188,46 @@ class View extends \yii\web\View
     }
 
     /**
+     * Renders a string as Ajax including assets without end page so it can be called several times.
+     *
+     * @param string $content
+     * @return string Rendered content
+     */
+    public function renderAjaxPartial(string $content): string
+    {
+        ob_start();
+        ob_implicit_flush(false);
+
+        $this->beginPage();
+        $this->head();
+        $this->beginBody();
+        echo $content;
+        $this->endBody();
+        $this->renderEndPage();
+
+        return ob_get_clean();
+    }
+
+    /**
+     * Render of ending page with all attached assets.
+     * This method doesn't mark a page is ended in order to allow to call it several times.
+     */
+    private function renderEndPage()
+    {
+        $this->trigger(self::EVENT_END_PAGE);
+
+        $content = ob_get_clean();
+
+        echo strtr($content, [
+            self::PH_HEAD => $this->renderHeadHtml(),
+            self::PH_BODY_BEGIN => $this->renderBodyBeginHtml(),
+            self::PH_BODY_END => $this->renderBodyEndHtml(true),
+        ]);
+
+        $this->clear();
+    }
+
+    /**
      * @inheritdoc
      */
     public function renderAjax($view, $params = [], $context = null)
@@ -179,7 +242,6 @@ class View extends \yii\web\View
         $this->beginBody();
         echo $this->renderFile($viewFile, $params, $context);
         $this->endBody();
-
         $this->endPage(true);
 
         return ob_get_clean();
@@ -192,7 +254,7 @@ class View extends \yii\web\View
     {
         $bundle = parent::registerAssetBundle($name, $position);
 
-        if($bundle instanceof AssetBundle && !empty($bundle->preload)) {
+        if ($bundle instanceof AssetBundle && !empty($bundle->preload)) {
             static::$preload = ArrayHelper::merge(static::$preload, $bundle->preload);
         }
 
@@ -201,14 +263,14 @@ class View extends \yii\web\View
 
     protected function registerAssetFiles($name)
     {
-        if(Yii::$app->request->isAjax
+        if (Yii::$app->request->isAjax
             && (in_array($name, AppAsset::STATIC_DEPENDS)
                 || in_array($name, CoreBundleAsset::STATIC_DEPENDS)
                 || in_array($name, [AppAsset::BUNDLE_NAME, CoreBundleAsset::BUNDLE_NAME]))) {
             return;
         }
 
-       return parent::registerAssetFiles($name);
+        return parent::registerAssetFiles($name);
     }
 
     /**
@@ -276,6 +338,7 @@ class View extends \yii\web\View
         if (!Yii::$app->request->isAjax) {
             SiteIcon::registerMetaTags($this);
             LayoutHeader::registerHeadTags($this);
+            $this->meta->registerMetaTags($this);
             parent::registerCsrfMetaTags();
         }
 
@@ -287,7 +350,7 @@ class View extends \yii\web\View
 
         $this->js[self::POS_HEAD] = null;
 
-        return parent::renderHeadHtml(). (empty($lines) ? '' : implode("\n", $lines));
+        return parent::renderHeadHtml() . (empty($lines) ? '' : implode("\n", $lines));
     }
 
     /**
@@ -297,7 +360,7 @@ class View extends \yii\web\View
     {
         $cacheBustedUrl = $this->addCacheBustQuery($url);
         foreach (static::$preload as $fileName) {
-            if(strpos($url,$fileName)) {
+            if (strpos($url, $fileName)) {
                 $this->registerPreload($cacheBustedUrl, 'script');
             }
         }
@@ -313,7 +376,7 @@ class View extends \yii\web\View
     {
         $cacheBustedUrl = $this->addCacheBustQuery($url);
         foreach (static::$preload as $fileName) {
-            if(strpos($url,$fileName)) {
+            if (strpos($url, $fileName)) {
                 $this->registerPreload($cacheBustedUrl, 'style');
             }
         }
@@ -323,7 +386,7 @@ class View extends \yii\web\View
 
     protected function registerPreload($url, $as)
     {
-        if(!in_array($url, static::$preloaded, true)) {
+        if (!in_array($url, static::$preloaded, true)) {
             $this->registerLinkTag((['rel' => 'preload', 'as' => $as, 'href' => $url]));
             static::$preloaded[] = $url;
         }
@@ -397,7 +460,7 @@ class View extends \yii\web\View
             echo '<title>' . $this->getPageTitle() . '</title>';
         }
 
-        if (Yii::$app->params['installed']) {
+        if (Yii::$app->isInstalled()) {
             if (Yii::$app->getSession()->hasFlash('view-status')) {
                 $viewStatus = Yii::$app->getSession()->getFlash('view-status');
                 $type = strtolower(key($viewStatus));
@@ -427,7 +490,7 @@ class View extends \yii\web\View
         }
 
         // Since the JsConfig accesses user queries it fails before installation.
-        if (Yii::$app->params['installed']) {
+        if (Yii::$app->isInstalled()) {
             CoreJsConfig::widget();
         }
 
@@ -444,8 +507,8 @@ class View extends \yii\web\View
      */
     private function registerViewContext()
     {
-        if(!empty(static::$viewContext)) {
-            $this->registerJs('humhub.modules.ui.view.setViewContext("'.static::$viewContext.'")', View::POS_END, 'viewContext');
+        if (!empty(static::$viewContext)) {
+            $this->registerJs('humhub.modules.ui.view.setViewContext("' . static::$viewContext . '")', View::POS_END, 'viewContext');
         }
     }
 
@@ -458,7 +521,15 @@ class View extends \yii\web\View
     protected function flushJsConfig($key = null)
     {
         if (!empty($this->jsConfig)) {
-            $this->registerJs("humhub.config.set(" . json_encode($this->jsConfig) . ");", View::POS_BEGIN, $key);
+            $jsConfig = 'humhub.config.set(' . json_encode($this->jsConfig) . ')';
+            if (Yii::$app->request->isAjax) {
+                // This fix is required only on AJAX request!
+                // Put JS config code into the "jsFiles" array, in order to call it before
+                // the module JS file where the config must be already initialised.
+                $this->jsFiles[self::POS_HEAD][$key ?: md5($jsConfig)] = Html::script($jsConfig);
+            } else {
+                $this->registerJs($jsConfig, self::POS_BEGIN, $key);
+            }
             $this->jsConfig = [];
         }
     }

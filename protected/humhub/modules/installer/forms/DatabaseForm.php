@@ -9,22 +9,22 @@
 namespace humhub\modules\installer\forms;
 
 use Yii;
+use yii\base\Model;
 
 /**
  * DatabaseForm holds all required database settings.
  *
  * @since 0.5
  */
-class DatabaseForm extends \yii\base\Model
+class DatabaseForm extends Model
 {
-
     /**
      * @var string hostname
      */
     public $hostname;
 
     /**
-     * @var integer port
+     * @var int port
      */
     public $port;
 
@@ -73,6 +73,20 @@ class DatabaseForm extends \yii\base\Model
             'password' => Yii::t('InstallerModule.base', 'Password'),
             'database' => Yii::t('InstallerModule.base', 'Name of Database'),
             'create' => Yii::t('InstallerModule.base', 'Create the database if it doesn\'t exist yet.'),
+        ];
+    }
+
+    /**
+     * @inheritdoc
+     */
+    public function attributeHints()
+    {
+        return [
+            'hostname' => Yii::t('InstallerModule.base', 'Hostname of your MySQL Database Server (e.g. localhost if MySQL is running on the same machine)'),
+            'port' => Yii::t('InstallerModule.base', 'Optional: Port of your MySQL Database Server. Leave empty to use default port.'),
+            'username' => Yii::t('InstallerModule.base', 'Your MySQL username'),
+            'password' => Yii::t('InstallerModule.base', 'Your MySQL password.'),
+            'database' => Yii::t('InstallerModule.base', 'The name of the database you want to run HumHub in.'),
         ];
     }
 

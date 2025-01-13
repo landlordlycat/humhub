@@ -2,6 +2,7 @@ assets/*
 !assets/.gitignore
 
 protected/runtime/*
+.env
 !protected/runtime/.gitignore
 
 node_modules
@@ -24,6 +25,8 @@ uploads/profile_image/banner/*
 nbproject
 .idea/*
 .gitmodules
+.vscode
+.php-cs-fixer.cache
 
 themes/*
 !themes/HumHub
@@ -34,7 +37,10 @@ favicon.ico
 /.project
 /protected/vendor/
 
+**/tests/codeception/_data/e/8/e882f005-efd5-4b8f-aadb-2726621b960a/preview-image
 **/tests/codeception/_support/_generated/**
 
 **/tests/codeception/_output/**
 /.php_cs.cache
+
+.DS_Store

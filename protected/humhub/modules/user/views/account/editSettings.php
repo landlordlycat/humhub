@@ -2,8 +2,13 @@
 
 use humhub\libs\TimezoneHelper;
 use humhub\modules\content\widgets\ContainerTagPicker;
-use humhub\modules\user\helpers\AuthHelper;
 use humhub\modules\ui\form\widgets\ActiveForm;
+use humhub\modules\user\models\forms\AccountSettings;
+use humhub\modules\user\widgets\UserPickerField;
+
+/* @var AccountSettings $model */
+/* @var array $languages */
+/* @var bool $isEnabledOnlineStatus */
 ?>
 
 <?php $this->beginContent('@user/views/account/_userSettingsLayout.php') ?>
@@ -12,26 +17,29 @@ use humhub\modules\ui\form\widgets\ActiveForm;
 
 <?= $form->field($model, 'tags')->widget(ContainerTagPicker::class, ['minInput' => 2]); ?>
 
-<?php if (count($languages) > 1) : ?>
+<?php if (count($languages) > 1): ?>
     <?= $form->field($model, 'language')->dropDownList($languages, ['data-ui-select2' => '']); ?>
 <?php endif; ?>
 
-<?= $form->field($model, 'timeZone')->dropDownList(TimezoneHelper::generateList(), ['data-ui-select2' => '']); ?>
-
-<?php if (AuthHelper::isGuestAccessEnabled()): ?>
-
-    <?php
-    echo $form->field($model, 'visibility')->dropDownList([
-        1 => Yii::t('UserModule.account', 'Registered users only'),
-        2 => Yii::t('UserModule.account', 'Visible for all (also unregistered users)'),
-    ]);
-    ?>
-
-
+<?= $form->field($model, 'timeZone')->dropDownList(TimezoneHelper::generateList(true)); ?>
+<?php if ($model->isVisibilityViewable()): ?>
+    <?= $form->field($model, 'visibility')->dropDownList($model->getVisibilityOptions(), [
+        'disabled' => !$model->isVisibilityEditable()
+    ]); ?>
 <?php endif; ?>
 
-<?php if (Yii::$app->getModule('tour')->settings->get('enable') == 1) : ?>
+<?php if ($isEnabledOnlineStatus): ?>
+    <?= $form->field($model, 'hideOnlineStatus')->checkbox(); ?>
+<?php endif; ?>
+
+<?php if (Yii::$app->getModule('tour')->settings->get('enable') == 1): ?>
     <?= $form->field($model, 'show_introduction_tour')->checkbox(); ?>
+<?php endif; ?>
+
+<?= $form->field($model, 'markdownEditorMode')->dropDownList($model->getEditorModeList(), ['data-ui-select2' => '']) ?>
+
+<?php if (Yii::$app->getModule('user')->allowBlockUsers()): ?>
+    <?= $form->field($model, 'blockedUsers')->widget(UserPickerField::class, ['minInput' => 2]); ?>
 <?php endif; ?>
 
 <button class="btn btn-primary" type="submit" data-ui-loader><?= Yii::t('UserModule.account', 'Save') ?></button>

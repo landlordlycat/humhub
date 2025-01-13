@@ -8,6 +8,7 @@
 
 namespace humhub\modules\file\libs;
 
+use humhub\modules\content\components\ContentContainerActiveRecord;
 use humhub\modules\file\Module;
 use humhub\modules\file\widgets\FileDownload;
 use humhub\libs\Html;
@@ -28,21 +29,30 @@ use yii\helpers\Url;
  */
 class FileHelper extends \yii\helpers\FileHelper
 {
-
     /**
      * Checks if given fileName has a extension
-     * 
+     *
      * @param string $fileName the filename
-     * @return boolean has extension
+     * @return bool has extension
      */
     public static function hasExtension($fileName)
     {
+        /**
+         * suggested alternative:
+         * `return pathinfo($file, PATHINFO_FILENAME) && pathinfo($file, PATHINFO_EXTENSION);`
+         * of
+         * `
+         * $path_parts = pathinfo($file);
+         * return ($path_parts['filename'] ?? false) && ($path_parts['extension'] ?? false);
+         * `
+         * @see \humhub\tests\codeception\unit\libs\FileHelperTest::testHasExtensionFalsePositives()
+         */
         return (strpos($fileName, '.') !== false);
     }
 
     /**
      * Returns the extension of a file
-     * 
+     *
      * @param string|File $fileName the filename or File model
      * @return string the extension
      */
@@ -50,6 +60,10 @@ class FileHelper extends \yii\helpers\FileHelper
     {
         if ($fileName instanceof File) {
             $fileName = $fileName->file_name;
+        }
+
+        if (!is_string($fileName)) {
+            return '';
         }
 
         $fileParts = pathinfo($fileName);
@@ -62,10 +76,10 @@ class FileHelper extends \yii\helpers\FileHelper
 
     /**
      * Creates a file with options
-     * 
-     * @since 1.2
-     * @param \humhub\modules\file\models\File $file
+     *
+     * @param File $file
      * @return string the rendered HTML link
+     * @since 1.2
      */
     public static function createLink(File $file, $options = [], $htmlOptions = [])
     {
@@ -74,21 +88,23 @@ class FileHelper extends \yii\helpers\FileHelper
         $fileHandlers = FileHandlerCollection::getByType([FileHandlerCollection::TYPE_VIEW, FileHandlerCollection::TYPE_EXPORT, FileHandlerCollection::TYPE_EDIT, FileHandlerCollection::TYPE_IMPORT], $file);
         if (count($fileHandlers) === 1 && $fileHandlers[0] instanceof DownloadFileHandler) {
             $htmlOptions['target'] = '_blank';
-            $htmlOptions = array_merge($htmlOptions,  FileDownload::getFileDataAttributes($file));
+            $htmlOptions = array_merge($htmlOptions, FileDownload::getFileDataAttributes($file));
             return Html::a($label, $file->getUrl(), $htmlOptions);
         }
 
         $htmlOptions = array_merge($htmlOptions, ['data-target' => '#globalModal']);
 
-        return Html::a($label, Url::to(['/file/view', 'guid' => $file->guid]), $htmlOptions);
+        $urlOptions = ['/file/view', 'guid' => $file->guid];
+
+        return Html::a($label, Url::to($urlOptions), $htmlOptions);
     }
 
     /**
      * Determines the content container of a File record
-     * 
-     * @since 1.2
+     *
      * @param File $file
-     * @return \humhub\modules\content\components\ContentContainerActiveRecord the content container or null
+     * @return ContentContainerActiveRecord the content container or null
+     * @since 1.2
      */
     public static function getContentContainer(File $file)
     {
@@ -106,10 +122,10 @@ class FileHelper extends \yii\helpers\FileHelper
     /**
      * Returns general file infos as array
      * These information are mainly used by the frontend JavaScript application to handle files.
-     * 
-     * @since 1.2
+     *
      * @param File $file the file
      * @return array the file infos
+     * @since 1.2
      */
     public static function getFileInfos(File $file)
     {
@@ -129,7 +145,7 @@ class FileHelper extends \yii\helpers\FileHelper
             'url' => $file->getUrl(),
             'relUrl' => $file->getUrl(null, false),
             'openLink' => FileHelper::createLink($file),
-            'thumbnailUrl' => $thumbnailUrl
+            'thumbnailUrl' => $thumbnailUrl,
         ];
     }
 

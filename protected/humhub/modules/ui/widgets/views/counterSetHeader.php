@@ -6,9 +6,11 @@
  */
 
 use humhub\libs\Html;
+use humhub\modules\ui\view\components\View;
+use humhub\modules\ui\widgets\CounterSetItem;
 
-/* @var $this \humhub\modules\ui\view\components\View */
-/* @var $counters \humhub\modules\ui\widgets\CounterSetItem[] */
+/* @var $this View */
+/* @var $counters CounterSetItem[] */
 
 ?>
 
@@ -16,7 +18,7 @@ use humhub\libs\Html;
     <?php foreach ($counters as $counter): ?>
 
         <?php if ($counter->hasLink()): ?>
-            <?= Html::beginTag('a', array_merge(['href' => '#', 'data-action-click' => 'ui.modal.load', 'data-action-url' => $counter->url], $counter->linkOptions)); ?>
+            <?= Html::beginTag('a', array_merge(['href' => $counter->url], $counter->linkOptions)); ?>
         <?php endif; ?>
 
         <div class="pull-left entry">

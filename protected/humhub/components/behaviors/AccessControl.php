@@ -11,9 +11,7 @@ namespace humhub\components\behaviors;
 use humhub\components\access\ControllerAccess;
 use Yii;
 use yii\base\ActionFilter;
-use yii\helpers\Url;
 use yii\web\HttpException;
-use yii\web\Response;
 
 /**
  * Handles the AccessControl for a Controller.
@@ -26,7 +24,7 @@ use yii\web\Response;
  * Disable guest access for all controller actions:
  *
  * ```php
- * public function getAccessRules()
+ * protected function getAccessRules()
  * {
  *     return [
  *          ['login']
@@ -37,7 +35,7 @@ use yii\web\Response;
  * Disable guest access for specific controller actions:
  *
  * ```php
- * public function getAccessRules()
+ * protected function getAccessRules()
  * {
  *     return [
  *          ['login' => ['action1', 'action2']]
@@ -48,7 +46,7 @@ use yii\web\Response;
  * All users have to be logged in + additional permission check for 'action1' and 'action2':
  *
  * ```php
- * public function getAccessRules()
+ * protected function getAccessRules()
  * {
  *     return [
  *          ['login'],
@@ -60,7 +58,7 @@ use yii\web\Response;
  * Custom inline validator for action 'action1':
  *
  * ```php
- * public function getAccessRules()
+ * protected function getAccessRules()
  * {
  *     return [
  *          ['validateMyCustomRule', 'someParameter' => 'someValue', 'actions' => ['action1']]
@@ -96,7 +94,6 @@ use yii\web\Response;
  */
 class AccessControl extends ActionFilter
 {
-
     /**
      * Rules for access to controller
      *
@@ -115,13 +112,14 @@ class AccessControl extends ActionFilter
     /**
      * Only allow admins access to this controller
      *
-     * @var boolean
+     * @var bool
      * @deprecated since 1.2.2 use ['adminOnly'] rule instead
      */
     public $adminOnly = false;
 
     /**
      * Only allow logged in users access to this controller
+     *
      * @deprecated since 1.2.2 use ['loggedInOnly'] rule instead
      */
     public $loggedInOnly = false;
@@ -137,9 +135,11 @@ class AccessControl extends ActionFilter
     public function beforeAction($action)
     {
         // Bypass when not installed for installer
-        if (empty(Yii::$app->params['installed']) &&
-                  Yii::$app->controller->module != null &&
-                  Yii::$app->controller->module->id == 'installer') {
+        if (
+            !Yii::$app->isInstalled()
+            && ($module = Yii::$app->controller->module)
+            && $module->id === 'installer'
+        ) {
             return true;
         }
 
@@ -147,16 +147,19 @@ class AccessControl extends ActionFilter
         $this->controllerAccess = $this->getControllerAccess($this->rules);
 
         if (!$this->controllerAccess->run()) {
-            if (isset($this->controllerAccess->codeCallback) &&
-                method_exists($this, $this->controllerAccess->codeCallback)) {
+            if (
+                isset($this->controllerAccess->codeCallback)
+                && method_exists($this, $this->controllerAccess->codeCallback)
+            ) {
                 // Call a specific function for current action filter,
                 // may be used to filter a logged in user for some restriction e.g. "must change password"
-                return call_user_func([$this, $this->controllerAccess->codeCallback]);
-            } else if ($this->controllerAccess->code == 401) {
-                return $this->loginRequired();
+                call_user_func([$this, $this->controllerAccess->codeCallback]);
+            } elseif ($this->controllerAccess->code == 401) {
+                $this->loginRequired();
             } else {
                 $this->forbidden();
             }
+            return false;
         }
 
         return parent::beforeAction($action);
@@ -217,31 +220,29 @@ class AccessControl extends ActionFilter
     }
 
     /**
-     * @return bool forces user login
+     * Force user to log in
      */
     protected function loginRequired()
     {
         Yii::$app->user->logout();
         Yii::$app->user->loginRequired();
-
-        return false;
     }
 
     /**
-     * @return Response Redirect user to force to change password
+     * Force user to redirect to change password
+     *
      * @since 1.8
      */
     protected function forceChangePassword()
     {
         if (!Yii::$app->user->isMustChangePasswordUrl()) {
-            return Yii::$app->getResponse()->redirect(Url::toRoute(Yii::$app->user->mustChangePasswordRoute));
+            Yii::$app->getResponse()->redirect([Yii::$app->user->mustChangePasswordRoute]);
         }
     }
 
     /**
      * Log out all non admin users when maintenance mode is active
      *
-     * @return Response Redirect to home page
      * @since 1.8
      */
     protected function checkMaintenanceMode()
@@ -251,7 +252,7 @@ class AccessControl extends ActionFilter
                 Yii::$app->user->logout();
                 Yii::$app->getView()->warn(Yii::t('error', 'Maintenance mode activated: You have been automatically logged out and will no longer have access the platform until the maintenance has been completed.'));
             }
-            return Yii::$app->getResponse()->redirect(['/user/auth/login']);
+            Yii::$app->getResponse()->redirect(['/user/auth/login']);
         }
     }
 }

@@ -8,7 +8,10 @@
 
 namespace humhub\models;
 
-use yii\base\InvalidArgumentException;
+use humhub\modules\admin\models\forms\OEmbedSettingsForm;
+use humhub\modules\ui\icon\widgets\Icon;
+use humhub\modules\user\models\User;
+use humhub\widgets\Button;
 use humhub\events\OembedFetchEvent;
 use humhub\libs\RestrictedCallException;
 use humhub\libs\UrlOembedClient;
@@ -38,7 +41,7 @@ class UrlOembed extends ActiveRecord
      * @event
      * @since 1.4
      */
-    const EVENT_FETCH = 'fetch';
+    public const EVENT_FETCH = 'fetch';
 
     /**
      * @var int Maximum amount of remote fetch calls per request
@@ -112,14 +115,14 @@ class UrlOembed extends ActiveRecord
      *
      * @return string|null
      */
-    public function getProviderUrl()
+    public function getProviderUrl(): ?string
     {
-        foreach (static::getProviders() as $providerBaseUrl => $providerAPI) {
-            if (strpos($this->url, $providerBaseUrl) !== false) {
-                return str_replace("%url%", urlencode($this->url), $providerAPI);
-            }
+        $provider = static::getProviderByUrl($this->url);
+        if ($provider === null) {
+            return null;
         }
-        return null;
+
+        return str_replace("%url%", urlencode($this->url), $provider['endpoint']);
     }
 
     /**
@@ -140,9 +143,10 @@ class UrlOembed extends ActiveRecord
      *  - A fetch counter restriction exceeded
      *
      * @param string $url
+     * @param bool $forceAllowedDomain true - to don't check the domain and always display media content
      * @return string|null
      */
-    public static function getOEmbed($url)
+    public static function getOEmbed($url, bool $forceAllowedDomain = false)
     {
         $oembedFetchEvent = new OembedFetchEvent(['url' => $url]);
         (new UrlOembed())->trigger(static::EVENT_FETCH, $oembedFetchEvent);
@@ -154,10 +158,15 @@ class UrlOembed extends ActiveRecord
             $url = trim($url);
 
             if (static::hasOEmbedSupport($url)) {
-                $urlOembed = static::findExistingOembed($url);
-                $result = $urlOembed ? $urlOembed->preview : self::loadUrl($url);
+                if (!$forceAllowedDomain && !self::isAllowedDomain($url)) {
+                    $result = self::confirmationContent($url);
+                } else {
+                    $urlOembed = static::findExistingOembed($url);
+                    $result = $urlOembed ? $urlOembed->preview : self::loadUrl($url);
+                }
 
                 if (!empty($result)) {
+
                     return trim(preg_replace('/\s+/', ' ', $result));
                 }
             }
@@ -208,7 +217,7 @@ class UrlOembed extends ActiveRecord
      * @return UrlOembed|null
      * @throws RestrictedCallException
      */
-    protected static function findExistingOembed($url)
+    public static function findExistingOembed($url)
     {
         if (array_key_exists($url, static::$cache)) {
             return static::$cache[$url];
@@ -283,13 +292,42 @@ class UrlOembed extends ActiveRecord
                 'data' => [
                     'guid' => uniqid('oembed-', true),
                     'richtext-feature' => 1,
-                    'oembed-provider' => Html::encode(static::getProviderByUrl($url)),
-                    'url' => Html::encode($url)
+                    'oembed-provider' => Html::encode(static::getProviderOptionByUrl($url, 'endpoint')),
+                    'url' => Html::encode($url),
                 ],
                 'class' => 'oembed_snippet',
             ]);
         }
         return null;
+    }
+
+    /**
+     * Replace the embedded content with confirmation before display it
+     *
+     * @param string $url
+     * @return string
+     */
+    protected static function confirmationContent(string $url): string
+    {
+        $urlData = parse_url($url);
+        $urlPrefix = $urlData['host'] ?? $url;
+
+        $html = Html::tag('strong', Yii::t('base', 'Allow content from external source')) .
+            Html::tag('br') .
+            Yii::t('base', 'Do you want to enable content from \'{urlPrefix}\'?', ['urlPrefix' => Html::tag('strong', $urlPrefix)]) .
+            Html::tag('br') .
+            Html::tag('label', '<input type="checkbox"> ' . Yii::t('base', 'Always allow content from this provider!')) .
+            Html::tag('br') .
+            Button::info(Yii::t('base', 'Confirm'))->action('oembed.display')->sm();
+
+        $html = Icon::get('info-circle') .
+            Html::tag('div', $html) .
+            Html::tag('div', '', ['class' => 'clearfix']);
+
+        return Html::tag('div', $html, [
+            'data-url' => $url,
+            'class' => 'oembed_confirmation',
+        ]);
     }
 
     /**
@@ -310,26 +348,46 @@ class UrlOembed extends ActiveRecord
      * Checks if a given URL Supports OEmbed
      *
      * @param string $url
-     * @return boolean
+     * @return bool
      */
-    public static function hasOEmbedSupport($url)
+    public static function hasOEmbedSupport(string $url): bool
     {
-        return static::getProviderByUrl($url) != null;
+        return static::getProviderByUrl($url) !== null;
     }
 
     /**
-     * @param $url
-     * @return mixed|null
+     * Find provider by pattern with provided URL
+     *
+     * @param string $url
+     * @return array|null
      */
-    public static function getProviderByUrl($url)
+    public static function getProviderByUrl(string $url): ?array
     {
-        foreach (static::getProviders() as $providerBaseUrl => $providerAPI) {
-            if (strpos($url, $providerBaseUrl) !== false) {
-                return $providerBaseUrl;
+        foreach (static::getProviders() as $name => $provider) {
+            if (isset($provider['pattern']) && preg_match($provider['pattern'], $url)) {
+                $provider['name'] = $name;
+                return $provider;
             }
         }
 
         return null;
+    }
+
+    /**
+     * Get provider option by URL
+     *
+     * @param string $url
+     * @param string $option 'name', 'pattern', 'endpoint'
+     * @return array|null
+     */
+    public static function getProviderOptionByUrl(string $url, string $option = 'name'): ?string
+    {
+        $provider = static::getProviderByUrl($url);
+        if ($provider === null) {
+            return null;
+        }
+
+        return $provider[$option] ?? null;
     }
 
     /**
@@ -397,6 +455,79 @@ class UrlOembed extends ActiveRecord
     public static function setProviders($providers)
     {
         Yii::$app->settings->set('oembedProviders', Json::encode($providers));
+    }
+
+    /**
+     * Check the domain is always allowed to display for current User
+     *
+     * @param string $url Domain or full URL
+     * @return array
+     */
+    public static function isAllowedDomain(string $url): bool
+    {
+        $oembedSettings = new OEmbedSettingsForm();
+        if (!$oembedSettings->requestConfirmation) {
+            return true;
+        }
+
+        if (Yii::$app->user->isGuest) {
+            return true;
+        }
+
+        if (preg_match('#^(https?:)?//#i', $url)) {
+            $url = parse_url($url);
+            if (!isset($url['host'])) {
+                return false;
+            }
+            $url = $url['host'];
+        }
+
+        return array_search($url, self::getAllowedDomains()) !== false;
+    }
+
+    /**
+     * Get domains always allowed to be displayed for current User
+     *
+     * @return array
+     */
+    public static function getAllowedDomains(): array
+    {
+        if (Yii::$app->user->isGuest) {
+            return [];
+        }
+
+        /* @var User $user */
+        $user = Yii::$app->user->getIdentity();
+
+        $allowedUrls = $user->settings->get('allowedOembedUrls');
+
+        return empty($allowedUrls) ? [] : explode(',', $allowedUrls);
+    }
+
+    /**
+     * Add a new allowed domain for oembed URLs to the current User settings
+     *
+     * @param string $domain
+     * @return bool
+     */
+    public static function saveAllowedDomain(string $domain): bool
+    {
+        if (Yii::$app->user->isGuest) {
+            return false;
+        }
+
+        if (self::isAllowedDomain($domain)) {
+            return true;
+        }
+
+        $allowedUrls = self::getAllowedDomains();
+        $allowedUrls[] = $domain;
+
+        /* @var User $user */
+        $user = Yii::$app->user->getIdentity();
+        $user->settings->set('allowedOembedUrls', implode(',', $allowedUrls));
+
+        return true;
     }
 
 }

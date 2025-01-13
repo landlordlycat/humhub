@@ -8,6 +8,7 @@
 
 namespace humhub\libs;
 
+use humhub\modules\admin\models\forms\MailingSettingsForm;
 use Yii;
 use yii\base\BaseObject;
 use yii\helpers\ArrayHelper;
@@ -19,7 +20,6 @@ use yii\helpers\ArrayHelper;
  */
 class DynamicConfig extends BaseObject
 {
-
     /**
      * Add an array to the dynamic configuration
      *
@@ -71,7 +71,7 @@ class DynamicConfig extends BaseObject
         file_put_contents($configFile, $content);
 
         if (function_exists('opcache_invalidate')) {
-            opcache_invalidate($configFile);
+            @opcache_invalidate($configFile);
         }
 
         if (function_exists('apc_compile_file')) {
@@ -90,37 +90,24 @@ class DynamicConfig extends BaseObject
         // Add Application Name to Configuration
         $config['name'] = Yii::$app->settings->get('name');
 
-        // Add Default language
-        $defaultLanguage = Yii::$app->settings->get('defaultLanguage');
-        if ($defaultLanguage !== null && $defaultLanguage != '') {
-            $config['language'] = Yii::$app->settings->get('defaultLanguage');
-        } else {
-            $config['language'] = Yii::$app->language;
-        }
-
-        $defaultTimeZone = Yii::$app->settings->get('defaultTimeZone');
-        if (!empty($defaultTimeZone)) {
-            $config['timeZone'] = $defaultTimeZone;
-            $config['components']['formatter']['defaultTimeZone'] = $defaultTimeZone;
-        }
-
         // Add Caching
-        $cacheClass = Yii::$app->settings->get('cache.class');
+        $cacheClass = Yii::$app->settings->get('cacheClass');
+        $cacheKeyPrefix = empty($config['components']['cache']['keyPrefix']) ? Yii::$app->id : $config['components']['cache']['keyPrefix'];
         if (in_array($cacheClass, ['yii\caching\DummyCache', 'yii\caching\FileCache'])) {
             $config['components']['cache'] = [
                 'class' => $cacheClass,
-                'keyPrefix' => Yii::$app->id
+                'keyPrefix' => $cacheKeyPrefix,
             ];
         } elseif ($cacheClass == 'yii\caching\ApcCache' && (function_exists('apcu_add') || function_exists('apc_add'))) {
             $config['components']['cache'] = [
                 'class' => $cacheClass,
-                'keyPrefix' => Yii::$app->id,
-                'useApcu' => (function_exists('apcu_add'))
+                'keyPrefix' => $cacheKeyPrefix,
+                'useApcu' => (function_exists('apcu_add')),
             ];
         } elseif ($cacheClass === \yii\redis\Cache::class) {
             $config['components']['cache'] = [
                 'class' => \yii\redis\Cache::class,
-                'keyPrefix' => Yii::$app->id
+                'keyPrefix' => $cacheKeyPrefix,
             ];
         }
 
@@ -131,52 +118,66 @@ class DynamicConfig extends BaseObject
         }
 
         // Install Mail Component
-        $mail = [];
-        $mail['transport'] = [];
-        if (Yii::$app->settings->get('mailer.transportType') == 'smtp') {
-            $mail['transport']['class'] = 'Swift_SmtpTransport';
-
-            if (Yii::$app->settings->get('mailer.hostname')) {
-                $mail['transport']['host'] = Yii::$app->settings->get('mailer.hostname');
-            }
-
-            if (Yii::$app->settings->get('mailer.username')) {
-                $mail['transport']['username'] = Yii::$app->settings->get('mailer.username');
-            } elseif (!Yii::$app->settings->get('mailer.password')) {
-                $mail['transport']['authMode'] = 'null';
-            }
-
-            if (Yii::$app->settings->get('mailer.password')) {
-                $mail['transport']['password'] = Yii::$app->settings->get('mailer.password');
-            }
-
-            if (Yii::$app->settings->get('mailer.encryption')) {
-                $mail['transport']['encryption'] = Yii::$app->settings->get('mailer.encryption');
-            }
-
-            if (Yii::$app->settings->get('mailer.port')) {
-                $mail['transport']['port'] = Yii::$app->settings->get('mailer.port');
-            }
-        } elseif (Yii::$app->settings->get('mailer.transportType') == 'php') {
-            $mail['transport']['class'] = 'Swift_MailTransport';
-        } else {
-            $mail['useFileTransport'] = true;
-        }
-        $config['components']['mailer'] = $mail;
+        $config['components']['mailer'] = self::getMailerConfig();
 
         // Remove old theme/view stuff
         unset($config['components']['view']);
         unset($config['components']['mailer']['view']);
 
-
         // Cleanups
         unset($config['components']['db']['charset']);
         unset($config['components']['formatterApp']);
+
+        // Remove old localisation options
+        unset($config['timeZone']);
+        unset($config['language']);
+        unset($config['components']['formatter']['defaultTimeZone']);
+        if (empty($config['components']['formatter'])) {
+            unset($config['components']['formatter']);
+        }
 
         $config['params']['config_created_at'] = time();
         $config['params']['horImageScrollOnMobile'] = Yii::$app->settings->get('horImageScrollOnMobile');
 
         self::save($config);
+    }
+
+    private static function getMailerConfig()
+    {
+        $mail = [];
+        $mail['transport'] = [];
+
+        $transportType = Yii::$app->settings->get('mailer.transportType', MailingSettingsForm::TRANSPORT_PHP);
+
+        if ($transportType === MailingSettingsForm::TRANSPORT_SMTP) {
+            if (Yii::$app->settings->get('mailer.hostname')) {
+                $mail['transport']['host'] = Yii::$app->settings->get('mailer.hostname');
+            }
+            if (Yii::$app->settings->get('mailer.port')) {
+                $mail['transport']['port'] = (int)Yii::$app->settings->get('mailer.port');
+            } else {
+                $mail['transport']['port'] = 25;
+            }
+            if (Yii::$app->settings->get('mailer.username')) {
+                $mail['transport']['username'] = Yii::$app->settings->get('mailer.username');
+            }
+            if (Yii::$app->settings->get('mailer.password')) {
+                $mail['transport']['password'] = Yii::$app->settings->get('mailer.password');
+            }
+            $mail['transport']['scheme'] = (empty(Yii::$app->settings->get('mailer.useSmtps'))) ? 'smtp' : 'smtps';
+
+        } elseif ($transportType === MailingSettingsForm::TRANSPORT_CONFIG) {
+            return [];
+        } elseif ($transportType === MailingSettingsForm::TRANSPORT_PHP) {
+            $mail['transport']['dsn'] = 'native://default';
+        } elseif ($transportType === MailingSettingsForm::TRANSPORT_DSN) {
+            $mail['transport']['dsn'] = Yii::$app->settings->get('mailer.dsn');
+        } elseif ($transportType === MailingSettingsForm::TRANSPORT_FILE) {
+            unset($mail['transport']);
+            $mail['useFileTransport'] = true;
+        }
+
+        return $mail;
     }
 
     /**
@@ -189,7 +190,7 @@ class DynamicConfig extends BaseObject
     public static function needRewrite($moduleId, $name)
     {
         return (in_array($name, [
-            'name', 'defaultLanguage', 'timeZone', 'cache.class', 'mailer.transportType',
+            'name', 'defaultLanguage', 'timeZone', 'cacheClass', 'mailer.transportType',
             'mailer.hostname', 'mailer.username', 'mailer.password', 'mailer.encryption',
             'mailer.port', 'horImageScrollOnMobile']));
     }
@@ -197,5 +198,10 @@ class DynamicConfig extends BaseObject
     public static function getConfigFilePath()
     {
         return Yii::getAlias(Yii::$app->params['dynamicConfigFile']);
+    }
+
+    public static function exist()
+    {
+        return file_exists(self::getConfigFilePath());
     }
 }

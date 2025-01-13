@@ -1,4 +1,5 @@
 <?php
+
 /**
  * @link https://www.humhub.org/
  * @copyright Copyright (c) 2021 HumHub GmbH & Co. KG
@@ -22,7 +23,6 @@ use yii\helpers\Url;
  */
 class SpacesController extends Controller
 {
-
     /**
      * @inheritdoc
      */
@@ -41,17 +41,6 @@ class SpacesController extends Controller
     }
 
     /**
-     * @inheritdoc
-     */
-    public function getAccessRules()
-    {
-        return [
-            [ControllerAccess::RULE_LOGGED_IN_ONLY],
-            ['permissions' => [SpaceDirectoryAccess::class]],
-        ];
-    }
-
-    /**
      * Action to display spaces page
      */
     public function actionIndex()
@@ -61,7 +50,7 @@ class SpacesController extends Controller
         $urlParams = Yii::$app->request->getQueryParams();
         unset($urlParams['page']);
         array_unshift($urlParams, '/space/spaces/load-more');
-        $this->getView()->registerJsConfig('directory', [
+        $this->getView()->registerJsConfig('cards', [
             'loadMoreUrl' => Url::to($urlParams),
         ]);
 
@@ -78,7 +67,7 @@ class SpacesController extends Controller
         $spaceQuery = new SpaceDirectoryQuery();
 
         $spaceCards = '';
-        foreach ($spaceQuery->all() as $space) {
+        foreach ($spaceQuery->with('contentContainerRecord')->all() as $space) {
             $spaceCards .= SpaceDirectoryCard::widget(['space' => $space]);
         }
 

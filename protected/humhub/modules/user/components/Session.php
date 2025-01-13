@@ -8,6 +8,7 @@
 
 namespace humhub\modules\user\components;
 
+use Exception;
 use Yii;
 use yii\web\DbSession;
 use yii\web\ErrorHandler;
@@ -19,7 +20,6 @@ use yii\db\Expression;
  */
 class Session extends DbSession
 {
-
     /**
      * @inheritdoc
      */
@@ -27,7 +27,7 @@ class Session extends DbSession
 
     /**
      * Returns all current logged in users.
-     * 
+     *
      * @return ActiveQueryUser
      */
     public static function getOnlineUsers()
@@ -37,6 +37,27 @@ class Session extends DbSession
         $query->andWhere(['IS NOT', 'user_http_session.user_id', new Expression('NULL')]);
         $query->andWhere(['>', 'user_http_session.expire', time()]);
         return $query;
+    }
+
+    /**
+     * @inheritDoc
+     */
+    public function getTimeout()
+    {
+        return (int) Yii::$app->user->authTimeout;
+    }
+
+    /**
+     * @inheritDoc
+     */
+    public function getCookieParams()
+    {
+        $params = parent::getCookieParams();
+        if (Yii::$app->request->autoEnsureSecureConnection &&
+            Yii::$app->request->isSecureConnection) {
+            $params['secure'] = true;
+        }
+        return $params;
     }
 
     /**
@@ -53,26 +74,26 @@ class Session extends DbSession
             }
 
             $expire = time() + $this->getTimeout();
-            $query = new Query;
+            $query = new Query();
             $exists = $query->select(['id'])
-                    ->from($this->sessionTable)
-                    ->where(['id' => $id])
-                    ->createCommand($this->db)
-                    ->queryScalar();
+                ->from($this->sessionTable)
+                ->where(['id' => $id])
+                ->createCommand($this->db)
+                ->queryScalar();
             if ($exists === false) {
                 $this->db->createCommand()
-                        ->insert($this->sessionTable, [
-                            'id' => $id,
-                            'data' => $data,
-                            'expire' => $expire,
-                            'user_id' => $userId,
-                        ])->execute();
+                    ->insert($this->sessionTable, [
+                        'id' => $id,
+                        'data' => $data,
+                        'expire' => $expire,
+                        'user_id' => $userId,
+                    ])->execute();
             } else {
                 $this->db->createCommand()
-                        ->update($this->sessionTable, ['data' => $data, 'expire' => $expire, 'user_id' => $userId], ['id' => $id])
-                        ->execute();
+                    ->update($this->sessionTable, ['data' => $data, 'expire' => $expire, 'user_id' => $userId], ['id' => $id])
+                    ->execute();
             }
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             $exception = ErrorHandler::convertExceptionToString($e);
             // its too late to use Yii logging here
             error_log($exception);

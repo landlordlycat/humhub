@@ -2,14 +2,16 @@
 
 use humhub\libs\Html;
 use humhub\modules\content\components\ContentActiveRecord;
+use humhub\modules\content\models\Content;
 use humhub\modules\content\widgets\ArchivedIcon;
+use humhub\modules\content\widgets\HiddenIcon;
+use humhub\modules\content\widgets\LockCommentsIcon;
+use humhub\modules\content\widgets\StateBadge;
 use humhub\modules\content\widgets\stream\WallStreamEntryOptions;
 use humhub\modules\content\widgets\UpdatedIcon;
 use humhub\modules\content\widgets\VisibilityIcon;
 use humhub\modules\content\widgets\WallEntryControls;
 use humhub\modules\space\models\Space;
-use humhub\modules\user\models\User;
-use humhub\modules\space\widgets\Image as SpaceImage;
 use humhub\modules\ui\icon\widgets\Icon;
 use humhub\modules\ui\view\components\View;
 use humhub\widgets\TimeAgo;
@@ -30,6 +32,7 @@ $container = $model->content->container;
     <?php elseif ($renderOptions->isPinned($model)) : ?>
         <?= Icon::get('map-pin', ['htmlOptions' => ['class' => 'icon-pin tt', 'title' => Yii::t('ContentModule.base', 'Pinned')]]) ?>
     <?php endif; ?>
+    <?= StateBadge::widget(['model' => $model]); ?>
 </div>
 
 <!-- since v1.2 -->
@@ -88,7 +91,8 @@ $container = $model->content->container;
             <?php endif; ?>
 
             <?= VisibilityIcon::getByModel($model) ?>
+            <?= HiddenIcon::getByModel($model) ?>
+            <?= LockCommentsIcon::getByModel($model) ?>
         </div>
     </div>
 </div>
-

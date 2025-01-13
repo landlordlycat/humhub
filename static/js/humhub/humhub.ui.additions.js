@@ -185,7 +185,27 @@ humhub.module('ui.additions', function (module, require, $) {
         });
 
         module.register('select2', '[data-ui-select2]', function ($match) {
-            $match.select2({theme: "humhub"});
+            const templateItem = function (item) {
+                const element = $(item.element);
+                return element.data('color')
+                    ? $('<span><span class="picker-color" style="background:' + element.data('color') + '"></span> ' + item.text + '</span>')
+                    : item.text;
+            };
+
+            $match.each(function () {
+                $(this).select2({
+                    theme: 'humhub',
+                    tags: typeof $(this).data('ui-select2-allow-new') !== 'undefined',
+                    insertTag: function (data, tag) {
+                        if (typeof $(this).data('ui-select2-new-sign') !== 'undefined') {
+                            tag.text += ' ' + $(this).data('ui-select2-new-sign');
+                        }
+                        data.unshift(tag);
+                    },
+                    templateResult: templateItem,
+                    templateSelection: templateItem,
+                });
+            });
         });
 
         module.register('highlightCode', 'pre code', function($match) {
@@ -288,6 +308,37 @@ humhub.module('ui.additions', function (module, require, $) {
         });
     };
 
+    var highlightWords = function (node, words, minWordLength) {
+        var $node = node instanceof $ ? node : $(node);
+        if (!$node.length || typeof($node.highlight) !== 'function') {
+            return;
+        }
+
+        if (typeof words === 'string' && words !== '') {
+            words = words.match(/[^\s]+\/[^\s]+|"[^"]+"|[\p{L}\d]+(?:['’`]\p{L}+)?/gu);
+            if (Array.isArray(words)) {
+                words = words.map(item => item.replace(/"/g, ''));
+                words = [...new Set(words)].sort((a, b) => b.length - a.length);
+            }
+        }
+        if (!Array.isArray(words)) {
+            return;
+        }
+
+        if (typeof minWordLength !== 'number') {
+            minWordLength = 3;
+        }
+
+        words.forEach(function (word) {
+            if (word.length < minWordLength) {
+                return;
+            }
+            $node.highlight(word);
+            word.indexOf("'") > -1 && $node.highlight(word.replace("'", '’'));
+            word.indexOf("’") > -1 && $node.highlight(word.replace('’', "'"));
+        });
+    };
+
     var observe = function (node, options) {
         if (object.isBoolean(options)) {
             options = {applyOnInit: options};
@@ -329,7 +380,8 @@ humhub.module('ui.additions', function (module, require, $) {
         extend: extend,
         register: register,
         switchButtons: switchButtons,
-        highlight: highlight
+        highlight: highlight,
+        highlightWords: highlightWords,
     });
 });
 
@@ -342,7 +394,7 @@ humhub.module('ui.additions', function (module, require, $) {
 
             // Open context menu
             $(this).on("contextmenu",
-                    function (e) {
+                    function (e, togglerEvent) {
                         // return native menu if pressing control
                         if (e.ctrlKey) {
                             return;
@@ -354,8 +406,8 @@ humhub.module('ui.additions', function (module, require, $) {
                         var menuSelector = settings.getMenuSelector.call(this, $(e.target));
 
                         var oParent = $(menuSelector).parent().offsetParent().offset();
-                        var posTop = e.clientY - oParent.top;
-                        var posLeft = e.clientX - oParent.left;
+                        var posTop = (togglerEvent && togglerEvent.clientY ? togglerEvent.clientY : e.clientY) - oParent.top;
+                        var posLeft = (togglerEvent && togglerEvent.clientX ? togglerEvent.clientX : e.clientX) - oParent.left;
 
                         // open menu
                         var $menu = $(menuSelector).data("invokedOn", $(e.target)).show().css({
@@ -371,12 +423,23 @@ humhub.module('ui.additions', function (module, require, $) {
                             settings.menuSelected.call(this, $invokedOn, $selectedMenu, e);
                         });
 
+                        var menuShift = $menu.offset().left + $menu.outerWidth() - $(window).width();
+                        if (menuShift > 0) {
+                            $menu.css('left', $menu.position().left - menuShift - 5);
+                        }
+
                         return false;
                     });
 
+            $(document).on('click', '[data-contextmenu-toggler]', function (e) {
+                $(this).closest($(this).data('contextmenu-toggler')).triggerHandler('contextmenu', e);
+            });
+
             // make sure menu closes on any click
-            $(document).click(function () {
-                $('.contextMenu').hide();
+            $(document).click(function (e) {
+                if (!$(e.target).closest('[data-contextmenu-toggler]').length) {
+                    $('.contextMenu').hide();
+                }
             });
         });
 
@@ -395,15 +458,3 @@ humhub.module('ui.additions', function (module, require, $) {
 
     };
 })(jQuery, window);
-
-/**
- * @deprecated since v1.2
- */
-function setModalLoader(evt) {
-    var modalFooter = $('.modal-footer');
-    if (typeof evt === 'object') {
-        modalFooter = $(evt.target).closest('.modal-footer');
-    }
-    modalFooter.find('.btn').hide();
-    modalFooter.find('.loader').removeClass('hidden');
-}
