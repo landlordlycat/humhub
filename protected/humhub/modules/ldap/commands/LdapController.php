@@ -11,21 +11,21 @@ namespace humhub\modules\ldap\commands;
 use Exception;
 use humhub\modules\ldap\authclient\LdapAuth;
 use humhub\modules\user\models\User;
+use Laminas\Ldap\Ldap;
 use Yii;
 use yii\base\InvalidArgumentException;
+use yii\console\Controller;
 use yii\console\ExitCode;
 use yii\console\widgets\Table;
 use yii\db\Expression;
 use yii\helpers\Console;
-use Laminas\Ldap\Ldap;
 
 /**
  * Console tools for manage Ldap
  * @method updateAttributes(array $array)
  */
-class LdapController extends \yii\console\Controller
+class LdapController extends Controller
 {
-
     /**
      * @inheritdoc
      */
@@ -56,7 +56,6 @@ class LdapController extends \yii\console\Controller
         }
 
         print "\n\n";
-
     }
 
     /**
@@ -88,7 +87,7 @@ class LdapController extends \yii\console\Controller
         $activeUserCount = User::find()->andWhere(['auth_mode' => $ldapAuthClient->getId(), 'status' => User::STATUS_ENABLED])->count();
         $disabledUserCount = User::find()->andWhere(['auth_mode' => $ldapAuthClient->getId(), 'status' => User::STATUS_DISABLED])->count();
 
-        $this->stdout("LDAP user count:\t\t" . $userCount . " users.\n");;
+        $this->stdout("LDAP user count:\t\t" . $userCount . " users.\n");
         $this->stdout("HumHub user count (active):\t" . $activeUserCount . " users.\n");
         $this->stdout("HumHub user count (disabled):\t" . $disabledUserCount . " users.\n\n");
 
@@ -109,7 +108,6 @@ class LdapController extends \yii\console\Controller
         try {
             $ldapAuthClient = $this->getAuthClient($id);
             $ldapAuthClient->syncUsers();
-
         } catch (Exception $ex) {
             $this->stderr("Error: " . $ex->getMessage() . "\n\n");
             return ExitCode::UNSPECIFIED_ERROR;
@@ -147,8 +145,6 @@ class LdapController extends \yii\console\Controller
             }
 
             echo Table::widget(['headers' => ['ID', 'Username', 'E-Mail'], 'rows' => $users]);
-
-
         } catch (Exception $ex) {
             $this->stderr("Error: " . $ex->getMessage() . "\n\n");
             return ExitCode::UNSPECIFIED_ERROR;
@@ -159,18 +155,23 @@ class LdapController extends \yii\console\Controller
 
 
     /**
-     * Clears the 'authclient_id' entries in the user table.
-     * Useful if the ldap ids changed.
+     * Resets the LDAP mapping of all or a certain account.
      *
      * @param string $id the auth client id (default: ldap)
+     * @param string $userName UserName, if set, the assignment will be deleted for this user only.
      * @return int status code
      */
-    public function actionMappingClear($id = 'ldap')
+    public function actionMappingClear($id = 'ldap', $userName = null)
     {
         $this->stdout("*** LDAP Flush user id mappings for AuthClient ID: " . $id . "\n\n");
-        User::updateAll(['authclient_id' => new Expression('NULL')], ['auth_mode' => $id]);
 
-        $this->stdout("Mappings cleared!\n");
+        if ($userName === null) {
+            User::updateAll(['authclient_id' => new Expression('NULL')], ['auth_mode' => $id]);
+        } else {
+            User::updateAll(['authclient_id' => new Expression('NULL')], ['auth_mode' => $id, 'username' => $userName]);
+        }
+
+        $this->stdout("Mapping(s) cleared!\n");
         return ExitCode::OK;
     }
 
@@ -234,7 +235,6 @@ class LdapController extends \yii\console\Controller
             $this->stdout("Checked:\t" . $i . " users.\n");
             $this->stdout("Remapped 'authclient_id' value:\t" . $d . " users.\n");
             $this->stdout("Remapped 'auth_mode' value:\t" . $m . " users.\n");
-
         } catch (Exception $ex) {
             $this->stderr("Error: " . $ex->getMessage() . "\n\n");
             return ExitCode::UNSPECIFIED_ERROR;

@@ -28,7 +28,7 @@ humhub.module('space.chooser', function (module, require, $) {
         this.$remoteSearch = $('#space-menu-remote-search');
 
 
-        if(view.isLarge()) {
+        if (view.isLarge()) {
             // set niceScroll to SpaceChooser menu
             this.$chooser.niceScroll({
                 cursorwidth: "7",
@@ -46,17 +46,13 @@ humhub.module('space.chooser', function (module, require, $) {
 
         this.initEvents();
         this.initSpaceSearch();
+        this.initMessageCounters();
     };
 
     SpaceChooser.prototype.initEvents = function () {
-        var that = this;
+        this.lazyLoad = module.config.lazyLoad && !this.hasItems();
 
-        $('[data-space-guid]').find('[data-message-count]').each(function () {
-            var $this = $(this);
-            if ($this.data('message-count') > 0) {
-                $this.show();
-            }
-        });
+        var that = this;
 
         // Forward click events to actual link
         this.$.on('click', SELECTOR_ITEM, function (evt) {
@@ -69,6 +65,10 @@ humhub.module('space.chooser', function (module, require, $) {
         this.$menu.parent().on('shown.bs.dropdown', function () {
             if (!view.isSmall()) {
                 that.$search.focus();
+            }
+
+            if (that.lazyLoad) {
+                that.triggerRemoteSearch('');
             }
         }).on('hidden.bs.dropdown', function () {
             that.clearSelection();
@@ -94,12 +94,18 @@ humhub.module('space.chooser', function (module, require, $) {
         });
     };
 
+    SpaceChooser.prototype.initMessageCounters = function () {
+        $('[data-space-guid] [data-message-count]').each(function () {
+            $(this).toggle($(this).data('message-count') > 0);
+        });
+    }
+
     SpaceChooser.prototype.handleNewContent = function (liveEvents) {
         var that = this;
         var increments = {};
 
         liveEvents.forEach(function (event) {
-            if (event.data.uguid || event.data.originator === user.guid() ||  event.data.silent) {
+            if (event.data.uguid || event.data.originator === user.guid() || event.data.silent) {
                 return;
             }
 
@@ -170,13 +176,13 @@ humhub.module('space.chooser', function (module, require, $) {
                         SpaceChooser.selectItem(that.getFirstItem());
                     } else if ($selection.nextAll(SELECTOR_ITEM + ':visible').length) {
                         SpaceChooser.deselectItem($selection)
-                                .selectItem($selection.nextAll(SELECTOR_ITEM + ':visible').first());
+                            .selectItem($selection.nextAll(SELECTOR_ITEM + ':visible').first());
                     }
                     break;
                 case 38: // Up -> select previous
                     if ($selection.prevAll(SELECTOR_ITEM + ':visible').length) {
                         SpaceChooser.deselectItem($selection)
-                                .selectItem($selection.prevAll(SELECTOR_ITEM + ':visible').first());
+                            .selectItem($selection.prevAll(SELECTOR_ITEM + ':visible').first());
                     }
                     break;
                 case 13: // Enter
@@ -251,8 +257,7 @@ humhub.module('space.chooser', function (module, require, $) {
     };
 
     SpaceChooser.prototype.highlight = function (input, selector) {
-        selector = selector || SELECTOR_ITEM;
-        this.$chooser.find(SELECTOR_ITEM).removeHighlight().highlight(input);
+        this.$chooser.find(selector || SELECTOR_ITEM).unhighlight().highlight(input);
     };
 
     SpaceChooser.prototype.triggerRemoteSearch = function (input) {
@@ -270,8 +275,12 @@ humhub.module('space.chooser', function (module, require, $) {
                 that.appendItem(space);
             });
 
+            that.initMessageCounters();
             that.highlight(input, SELECTOR_ITEM_REMOTE);
             that.onChange(input);
+
+            // make sure lazy load is disabled to prevent future duplication
+            that.lazyLoad = false;
         }).catch(function (e) {
             if (!e.textStatus === "abort") {
                 module.log.error(e, true);
@@ -288,21 +297,27 @@ humhub.module('space.chooser', function (module, require, $) {
 
             // Clear all current remote results not matching the current search
             that.clearRemoteSearch(input);
+
             var url = module.config.remoteSearchUrl;
+            if (that.lazyLoad && module.config.lazySearchUrl) {
+                url = module.config.lazySearchUrl;
+            }
 
             if (!url) {
                 reject('Could not execute space remote search, set data-space-search-url in your space search input');
                 return;
-            } else if (input.length < 2) {
+            } else if (input.length < 2 && !that.lazyLoad) {
                 resolve(false);
                 return;
             }
 
             var searchTs = Date.now();
-            var options = {data: {keyword: input, target: 'chooser'},
+            var options = {
+                data: that.lazyLoad ? {} : {keyword: input, target: 'chooser'},
                 beforeSend: function (xhr) {
                     that.currentXhr = xhr;
-                }};
+                }
+            };
 
             ui.loader.set(that.$remoteSearch, {'wrapper': '<li>', 'css': {padding: '5px'}});
 
@@ -352,13 +367,21 @@ humhub.module('space.chooser', function (module, require, $) {
             this.$search.val('').focus();
         }
         this.$search.removeData('last-search');
-        this.getItems().show().removeHighlight().removeClass('selected');
+        this.getItems().show().unhighlight().removeClass('selected');
         this.$chooser.css('max-height', '400px');
         this.$remoteSearch.empty();
         this.trigger('resetSearch');
     };
 
     SpaceChooser.prototype.onChange = function (input) {
+        if (!this.lazyLoad) {
+            this.showMessage(input);
+        }
+
+        this.trigger('changed', input);
+    };
+
+    SpaceChooser.prototype.showMessage = function (input) {
         var emptyResult = !this.getFirstItem().length;
         var atLeastTwo = input && input.length > 1;
 
@@ -369,9 +392,7 @@ humhub.module('space.chooser', function (module, require, $) {
         } else if (!atLeastTwo) {
             this.$remoteSearch.html('<li><div class="help-block">' + module.text('info.remoteAtLeastInput') + '</div></li>');
         }
-
-        this.trigger('changed', input);
-    };
+    }
 
     SpaceChooser.prototype.clearSelection = function () {
         return this.getSelectedItem().removeClass('selected');
@@ -379,6 +400,10 @@ humhub.module('space.chooser', function (module, require, $) {
 
     SpaceChooser.prototype.getFirstItem = function () {
         return this.$chooser.find('[data-space-chooser-item]:visible').first();
+    };
+
+    SpaceChooser.prototype.hasItems = function () {
+        return this.$chooser.find('[data-space-chooser-item]').length > 0;
     };
 
     SpaceChooser.selectItem = function ($item) {

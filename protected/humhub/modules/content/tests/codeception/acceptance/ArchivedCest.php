@@ -1,4 +1,5 @@
 <?php
+
 namespace content\acceptance;
 
 use content\AcceptanceTester;
@@ -143,6 +144,8 @@ class ArchivedCest
         ];
 
         $I->amOnDashboard();
+        $I->wait(1);
+        $I->scrollToBottom();
         $I->dontSeeArchivedContents($archivedContents, $notArchivedContents);
 
         $I->filterStreamArchived();

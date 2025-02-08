@@ -1,36 +1,27 @@
 <?php
 
-use humhub\assets\DirectoryAsset;
+use humhub\assets\CardsAsset;
 use humhub\libs\Html;
 use humhub\modules\user\components\PeopleQuery;
 use humhub\modules\user\widgets\PeopleCard;
 use humhub\modules\user\widgets\PeopleFilters;
-use humhub\widgets\Button;
-use humhub\widgets\ModalButton;
+use humhub\modules\user\widgets\PeopleHeadingButtons;
+use yii\web\View;
 
-/* @var $this \yii\web\View */
+/* @var $this View */
 /* @var $people PeopleQuery */
-/* @var $showInviteButton bool */
 
-DirectoryAsset::register($this);
+CardsAsset::register($this);
 ?>
 <div class="panel panel-default">
 
     <div class="panel-heading">
-        <?php if ($people->isFilteredByGroup()) : ?>
-            <?= Yii::t('UserModule.base', '<strong>Group</strong> members - {group}', ['{group}' => Html::encode($people->filteredGroup->name)]); ?>
-        <?php else: ?>
-            <?= Yii::t('UserModule.base', '<strong>People</strong>'); ?>
-        <?php endif; ?>
-
-        <?php if ($showInviteButton): ?>
-            <?= ModalButton::primary(Yii::t('UserModule.base', 'Send invite'))
-                ->load(['/user/invite'])->icon('invite')->sm()->right() ?>
-        <?php endif; ?>
+        <?= Yii::t('UserModule.base', '<strong>People</strong>') ?>
+        <?= PeopleHeadingButtons::widget() ?>
     </div>
 
     <div class="panel-body">
-        <?= PeopleFilters::widget(); ?>
+        <?= PeopleFilters::widget(['query' => $people]) ?>
     </div>
 
 </div>
@@ -53,13 +44,10 @@ DirectoryAsset::register($this);
 </div>
 
 <?php if (!$people->isLastPage()) : ?>
-    <div class="directory-load-more">
-        <?= Button::primary(Yii::t('UserModule.base', 'Load more'))
-            ->icon('fa-angle-down')
-            ->action('directory.loadMore')
-            ->options([
-                'data-current-page' => $people->pagination->getPage() + 1,
-                'data-total-pages' => $people->pagination->getPageCount(),
-            ]) ?>
-    </div>
+    <?= Html::tag('div', '', [
+        'class' => 'cards-end',
+        'data-current-page' => $people->pagination->getPage() + 1,
+        'data-total-pages' => $people->pagination->getPageCount(),
+        'data-ui-loader' => '',
+    ]) ?>
 <?php endif; ?>

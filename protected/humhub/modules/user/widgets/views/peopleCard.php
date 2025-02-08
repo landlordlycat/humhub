@@ -7,10 +7,9 @@
 
 use humhub\libs\Html;
 use humhub\modules\user\models\User;
-use humhub\modules\user\widgets\PeopleActionButtons;
 use humhub\modules\user\widgets\Image;
+use humhub\modules\user\widgets\PeopleActionButtons;
 use humhub\modules\user\widgets\PeopleDetails;
-use humhub\modules\user\widgets\PeopleIcons;
 use humhub\modules\user\widgets\PeopleTagList;
 use yii\web\View;
 
@@ -19,13 +18,15 @@ use yii\web\View;
 ?>
 
 <div class="card-panel">
-    <div class="card-bg-image"<?php if ($user->getProfileBannerImage()->hasImage()) : ?> style="background-image: url('<?= $user->getProfileBannerImage()->getUrl() ?>')"<?php endif; ?>></div>
+    <div
+        class="card-bg-image"<?php if ($user->getProfileBannerImage()->hasImage()) : ?> style="background-image: url('<?= $user->getProfileBannerImage()->getUrl() ?>')"<?php endif; ?>></div>
     <div class="card-header">
         <?= Image::widget([
             'user' => $user,
             'htmlOptions' => ['class' => 'card-image-wrapper'],
             'linkOptions' => ['data-contentcontainer-id' => $user->contentcontainer_id, 'class' => 'card-image-link'],
             'width' => 94,
+            'showSelfOnlineStatus' => true,
         ]); ?>
         <?php /*<div class="card-icons">
             <?= PeopleIcons::widget(['user' => $user]); ?>
@@ -33,8 +34,8 @@ use yii\web\View;
     </div>
     <div class="card-body">
         <strong class="card-title"><?= Html::containerLink($user); ?></strong>
-        <?php if (trim($user->profile->title) !== '') : ?>
-            <div><?= Html::encode($user->profile->title); ?></div>
+        <?php if (!empty($user->displayNameSub)) : ?>
+            <div><?= Html::encode($user->displayNameSub); ?></div>
         <?php endif; ?>
         <?= PeopleDetails::widget([
             'user' => $user,

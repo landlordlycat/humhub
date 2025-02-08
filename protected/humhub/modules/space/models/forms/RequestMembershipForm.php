@@ -12,7 +12,6 @@ use yii\base\Model;
  */
 class RequestMembershipForm extends Model
 {
-
     public $space_id;
     public $message;
     public $options;
@@ -36,7 +35,7 @@ class RequestMembershipForm extends Model
     public function attributeLabels()
     {
         return [
-            'message' => Yii::t('SpaceModule.base', 'Application message')
+            'message' => Yii::t('SpaceModule.base', 'Your Message'),
         ];
     }
 

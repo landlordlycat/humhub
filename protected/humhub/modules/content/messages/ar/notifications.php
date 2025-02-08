@@ -1,8 +1,9 @@
 <?php
 return array (
   'New Content' => 'محتوى جديد',
-  'Receive Notifications for new content you follow.' => 'تلقي الإخطارات للمحتوى الجديد الذي تتابعه.',
+  'Receive Notifications for new content you follow.' => 'تلقي الإشعارات للمحتوى الجديد الذي تتابعه.',
   'View Online' => 'مشاهدة حية',
+  'Your {contentTitle} has been deleted by {displayName} for \'{reason}\'' => 'تم حذف {contentTitle} الخاص بك بواسطة {displayName} بسبب \'{reason}\'',
   '{displayName} created {contentTitle}.' => 'قام {displayName} بإنشاء {contentTitle}.',
   '{displayName} posted on your profile {contentTitle}.' => 'نشر {displayName} في ملفك الشخصي {contentTitle}.',
   '{originator} just wrote {contentInfo}' => '{originator} كتب {contentInfo} للتو',

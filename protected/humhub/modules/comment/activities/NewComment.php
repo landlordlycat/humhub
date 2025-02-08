@@ -8,6 +8,7 @@
 
 namespace humhub\modules\comment\activities;
 
+use humhub\modules\comment\models\Comment;
 use Yii;
 use humhub\modules\activity\components\BaseActivity;
 use humhub\modules\activity\interfaces\ConfigurableActivityInterface;
@@ -19,7 +20,6 @@ use humhub\modules\activity\interfaces\ConfigurableActivityInterface;
  */
 class NewComment extends BaseActivity implements ConfigurableActivityInterface
 {
-
     /**
      * @inheritdoc
      */
@@ -29,6 +29,11 @@ class NewComment extends BaseActivity implements ConfigurableActivityInterface
      * @inheritdoc
      */
     public $viewName = "newComment";
+
+    /**
+     * @var Comment
+     */
+    public $source;
 
     /**
      * @inheritdoc
@@ -44,6 +49,14 @@ class NewComment extends BaseActivity implements ConfigurableActivityInterface
     public function getDescription()
     {
         return Yii::t('CommentModule.base', 'Whenever a new comment was written.');
+    }
+
+    /**
+     * @inheritdoc
+     */
+    public function getUrl()
+    {
+        return $this->source->url;
     }
 
 }

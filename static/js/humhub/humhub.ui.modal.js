@@ -92,11 +92,15 @@ humhub.module('ui.modal', function (module, require, $) {
         });
 
         this.set(options);
+
+        // Store initial data to reset it
+        this.initialOptions = options;
+        this.initialDialog = this.getDialog().clone(true);
     };
 
     Modal.prototype.checkAriaLabel = function () {
         var $title = this.$.find('.modal-title');
-        if($title.length) {
+        if ($title.length) {
             $title.attr('id', this.getTitleId());
             this.$.attr('aria-labelledby', this.getTitleId());
         } else {
@@ -113,13 +117,10 @@ humhub.module('ui.modal', function (module, require, $) {
      * @returns {undefined}
      */
     Modal.prototype.close = function (reset) {
-        var that = this;
-        this.$.fadeOut('fast', function () {
-            that.$.modal('hide');
-            if (reset) {
-                that.reset();
-            }
-        });
+        this.$.modal('hide');
+        if (reset) {
+            this.reset();
+        }
     };
 
     /**
@@ -132,20 +133,29 @@ humhub.module('ui.modal', function (module, require, $) {
     };
 
     /**
+     * Sets the loader to footer in order to inactivate the action buttons
+     */
+    Modal.prototype.footerLoader = function (evt) {
+        if (evt instanceof $.Event) {
+            evt.$form = evt.$trigger.closest('form');
+            evt.length = evt.$form.length;
+        }
+        loader.set(this.getFooter(), {css: {padding: '13px 0 14px'}});
+    }
+
+    /**
      * Sets the default content (a loader animation)
      * @returns {undefined}
      */
     Modal.prototype.reset = function () {
-        // Clear old script tags.
-        var $content = this.getContent().empty();
-        this.$.find('script').remove();
-        $content.append('<div class="modal-body" />');
-        loader.set(this.getBody());
         this.isFilled = false;
-
-        this.getDialog().removeClass('modal-dialog-large modal-dialog-normal modal-dialog-small modal-dialog-extra-small modal-dialog-medium');
-
-        //reset listeners:
+        // Remove scripts from previous modal window
+        this.$.find('script').remove();
+        // Reset dialog to initial html
+        this.getDialog().replaceWith(this.initialDialog.clone(true));
+        // Reset options in order to display initial window on load new window
+        this.options = this.initialOptions;
+        // Reset listeners to avoid unexpected js behaviour
         this.resetListener();
     };
 
@@ -218,7 +228,7 @@ humhub.module('ui.modal', function (module, require, $) {
         });
     };
 
-    var setDefaultRequestData = function(cfg) {
+    var setDefaultRequestData = function (cfg) {
         cfg = cfg || {};
         cfg.data = cfg.data || {};
         cfg.viewContext = cfg.viewContext || 'modal';
@@ -397,8 +407,8 @@ humhub.module('ui.modal', function (module, require, $) {
             this.setFooter(this.options.footer);
         }
 
-        if(this.options.size) {
-            this.getDialog().addClass('modal-dialog-'+this.options.size);
+        if (this.options.size) {
+            this.getDialog().addClass('modal-dialog-' + this.options.size);
         }
 
         this.options.backdrop = object.defaultValue(options.backdrop, 'static');
@@ -442,10 +452,10 @@ humhub.module('ui.modal', function (module, require, $) {
             }
         }
 
-        if(content) {
+        if (content) {
             this.$.empty().append(content);
             this.applyAdditions();
-            this.$.find('select:visible, input[type="text"]:visible, textarea:visible, [contenteditable="true"]:visible').first().focus();
+            this.focus();
             this.checkAriaLabel();
             this.updateDialogOptions();
             this.$.scrollTop(0);
@@ -458,10 +468,10 @@ humhub.module('ui.modal', function (module, require, $) {
 
     Modal.prototype.focus = function () {
         var that = this;
-        setTimeout(function() {
-            var $input = that.$.find('select:visible, input[type="text"]:visible, textarea:visible, [contenteditable="true"]:visible').first();
+        setTimeout(function () {
+            var $input = that.$.find('select[autofocus]:visible:not(:disabled), input[autofocus][type="text"]:visible:not(:disabled), textarea[autofocus]:visible:not(:disabled), [contenteditable="true"][autofocus]:visible:not(:disabled)').first();
 
-            if($input.data('select2')) {
+            if ($input.data('select2')) {
                 $input.select2('focus');
             } else {
                 $input.focus();
@@ -469,10 +479,10 @@ humhub.module('ui.modal', function (module, require, $) {
         }, 100);
     };
 
-    Modal.prototype.updateDialogOptions = function() {
+    Modal.prototype.updateDialogOptions = function () {
         this.set({
-            backdrop : this.getDialog().data('backdrop'),
-            keyboard : this.getDialog().data('keyboard')
+            backdrop: this.getDialog().data('backdrop'),
+            keyboard: this.getDialog().data('keyboard')
         });
     };
 
@@ -559,6 +569,10 @@ humhub.module('ui.modal', function (module, require, $) {
             _setModalsAndBackdropsOrder();
         });
 
+        $(document).on('hide.bs.modal', '.modal', function (event) {
+            $(this).addClass('fade');
+        });
+
         $(document).on('hidden.bs.modal', '.modal', function (event) {
             _setModalsAndBackdropsOrder();
             $(this).attr('aria-hidden', 'true');
@@ -595,7 +609,7 @@ humhub.module('ui.modal', function (module, require, $) {
                     return true;
                 }
 
-                if($target.closest('.ProseMirror-prompt').length) {
+                if ($target.closest('.ProseMirror-prompt').length) {
                     return true;
                 }
 
@@ -660,7 +674,7 @@ humhub.module('ui.modal', function (module, require, $) {
 
         var modal = (id) ? module.get(id) : module.global;
         return client.submit(evt, setDefaultRequestData(options)).then(function (response) {
-            if(response.success) {
+            if (response.success) {
                 modal.close();
             } else {
                 modal.setDialog(response);
@@ -690,15 +704,15 @@ humhub.module('ui.modal', function (module, require, $) {
         var modal = (id) ? module.get(id) : module.global;
         return modal.load(evt, setDefaultRequestData(options))
             .catch(function (err) {
-            module.log.error(err, true);
-            modal.close();
-        });
+                module.log.error(err, true);
+                modal.close();
+            });
     };
 
-    var unload = function() {
+    var unload = function () {
         $('.modal').each(function () {
             var modal = Modal.instance(this);
-            if (modal && typeof modal.close === 'function') {
+            if (modal && typeof modal.close === 'function' && !$(this).find('.exclude-from-pjax-client').length) {
                 modal.close();
             }
         });
@@ -723,7 +737,7 @@ humhub.module('ui.modal', function (module, require, $) {
 
     var show = function (evt) {
         var modal = get(evt.$target);
-        if(modal) {
+        if (modal) {
             modal.show();
         }
     };
@@ -749,11 +763,19 @@ humhub.module('ui.modal', function (module, require, $) {
     var _getConfirmOptionsByTrigger = function ($trigger) {
         return {
             'body': $trigger.data('action-confirm'),
-            'header': $trigger.data('action-confirm-header') ||  $trigger.data('action-confirm-title'),
+            'header': $trigger.data('action-confirm-header') || $trigger.data('action-confirm-title'),
             'confirmText': $trigger.data('action-confirm-text'),
             'cancelText': $trigger.data('action-cancel-text')
         };
     };
+
+    const footerLoader = function (evt) {
+        module.global.footerLoader(evt);
+    }
+
+    const setContent = function (html) {
+        module.global.setContent(html);
+    }
 
     module.export({
         init: init,
@@ -766,6 +788,8 @@ humhub.module('ui.modal', function (module, require, $) {
         load: load,
         unload: unload,
         show: show,
-        submit: submit
+        submit: submit,
+        footerLoader,
+        setContent
     });
 });

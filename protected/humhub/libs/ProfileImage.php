@@ -18,8 +18,9 @@ use Imagine\Image\Box;
 use Imagine\Image\ManipulatorInterface;
 use Imagine\Image\Point;
 use Yii;
-use yii\helpers\Url;
+use yii\base\Exception;
 use yii\helpers\FileHelper;
+use yii\helpers\Url;
 use yii\imagine\Image;
 use yii\web\UploadedFile;
 
@@ -38,7 +39,6 @@ use yii\web\UploadedFile;
  */
 class ProfileImage
 {
-
     /**
      * @var String is the guid of user or space
      */
@@ -92,7 +92,7 @@ class ProfileImage
      * Returns the URl of the Modified Profile Image
      *
      * @param String $prefix Prefix of the returned image
-     * @param boolean $scheme URL Scheme
+     * @param bool $scheme URL Scheme
      * @return String Url of the profile image
      * @throws \yii\base\InvalidConfigException
      * @throws \yii\base\Exception
@@ -150,7 +150,7 @@ class ProfileImage
      * @param Int $y
      * @param Int $h
      * @param Int $w
-     * @return boolean indicates the success
+     * @return bool indicates the success
      * @throws \yii\base\Exception
      */
     public function cropOriginal($x, $y, $h, $w)
@@ -167,13 +167,16 @@ class ProfileImage
      * Sets a new profile image by given temp file
      *
      * @param mixed $file CUploadedFile or file path
-     * @throws \yii\base\Exception
+     * @throws Exception
      */
     public function setNew($file)
     {
         if ($file instanceof UploadedFile) {
             $file = $file->tempName;
         }
+
+        ImageHelper::checkMaxDimensions($file);
+
         $this->delete();
 
         // Convert image to uploaded JPEG, fix orientation and remove additional meta information
@@ -265,6 +268,10 @@ class ProfileImage
             return SpaceImage::widget($widgetOptions);
         }
 
+        if (isset($cfg['showSelfOnlineStatus'])) {
+            $widgetOptions['showSelfOnlineStatus'] = $cfg['showSelfOnlineStatus'];
+            unset($cfg['showSelfOnlineStatus']);
+        }
 
         $htmlOptions = [];
 

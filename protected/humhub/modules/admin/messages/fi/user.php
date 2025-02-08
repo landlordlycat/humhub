@@ -19,6 +19,8 @@ return [
     'All the personal data of this user will be irrevocably deleted.' => 'Kaikki tiedot tullaan poistamaan tältä tililtä ikuisesti.',
     'Allow' => 'Salli',
     'Allow visitors limited access to content without an account (Adds visibility: "Guest")' => 'Salli rajoitetun käytön muille kuin todennetuille käyttäjille (vieraille)',
+    'Apply' => 'Hyväksy',
+    'Approve' => 'Hyväksy',
     'Are you really sure that you want to disable this user?' => 'Haluatko varmasti sulkea tämän käyttäjän?',
     'Are you really sure that you want to enable this user?' => 'Haluatko varmasti avata tämän käyttäjän?',
     'Are you really sure that you want to impersonate this user?' => 'Haluatko varmasti siirtyä tämän käyttäjän tiliin?',
@@ -30,6 +32,7 @@ return [
     'Create new group' => 'Luo uusi ryhmä',
     'Create new profile category' => 'Luo uusi profiililuokka',
     'Create new profile field' => 'Luo uusi profiilikenttä',
+    'Decline' => 'Hylkää',
     'Decline & delete user: <strong>{displayName}</strong>' => 'Hylkää ja poista käyttäjä: <strong>{displayName}</strong>',
     'Default' => 'Oletus',
     'Default content of the registration approval email' => 'Rekisteröinnin hyväksymisilmoituksen oletussisältö',
@@ -41,12 +44,14 @@ return [
     'Delete invitation' => 'Poista kutsu',
     'Delete invitation?' => 'Haluatko poista kutsun?',
     'Delete spaces which are owned by this user' => 'Poista sivu jonka omistaa tämä käyttäjä',
+    'Deleted' => 'Poistettu',
     'Deleted invitation' => 'Poistetut kutsut',
     'Deleted users' => 'Poistetut käyttäjät',
     'Disable' => 'Sulje',
     'Disabled' => 'Pois päältä',
     'Disabled users' => 'Suljetut käyttäjät',
     'Do not change placeholders like {displayName} if you want them to be automatically filled by the system. To reset the email content fields with the system default, leave them empty.' => 'Älä muuta paikkamerkkejä, kuten {displayName}, jos haluat, että järjestelmä täyttää ne automaattisesti. Jos haluat palauttaa sähköpostiosoitekentät järjestelmän oletusarvoisesti, jätä ne tyhjiksi.',
+    'Edit' => 'Muokka',
     'Edit profile category' => 'Muokkaa profiililuokkaa',
     'Edit profile field' => 'Muokkaa profiilikenttää',
     'Edit user: {name}' => 'Muokkaa käyttäjää: {name}',
@@ -60,7 +65,6 @@ return [
     'Here you can create or edit profile categories and fields.' => 'Täällä voit luoda tai muokata profiililuokkia ja kenttiä.',
     'If this option is not selected, the ownership of the spaces will be transferred to your account.' => 'Jos tämä valinta ei ole valittu, sivujen omistajuus siirtyy sinulle.',
     'Impersonate' => 'Siirry käyttäjän tiliin',
-    'Include captcha in registration form' => 'Lisää captcha rekisteröintilomakkeeseen',
     'Invite not found!' => 'Kutsua ei löytynyt!',
     'Last login' => 'Viimeisin kirjautuminen',
     'Last name' => 'Sukunimi',
@@ -72,7 +76,6 @@ return [
     'Members' => 'Käyttäjät',
     'Members can invite external users by email' => 'Jäsenet voivat kutsua ulkopuolisia käyttäjiä sähköpostitse',
     'Message' => 'Viesti',
-    'Min value is 20 seconds. If not set, session will timeout after 1400 seconds (24 minutes) regardless of activity (default session timeout)' => 'Min-arvo on 20 sekuntia. Jos asetusta ei ole määritetty, istunto keskeytyy 1400 sekunnin (24 minuutin) jälkeen toiminnasta riippumatta (istunnon aikakatkaisu)',
     'New approval requests' => 'Uudet hyväksyntäpyynnöt',
     'New users can register' => 'Anonyymit käyttäjät voivat rekisteröityä',
     'No' => 'Ei',
@@ -88,16 +91,17 @@ return [
     'Permanently delete' => 'Poista pysyvästi',
     'Permissions' => 'Oikeudet',
     'Profiles' => 'Profiilit',
+    'Protected' => 'Piilotettu',
     'Remove from group' => 'Poista ryhmästä',
-    'Require group admin approval after registration' => 'Vaadi ylläpitäjän hyväksyntä rekisteröinnin jälkeen',
     'Resend invitation email' => 'Lähetä kutsu uudelleen',
     'Save' => 'Tallenna',
     'Search by name, email or id.' => 'Hae nimellä, sähköpostilla tai id:llä',
     'Select Groups' => 'Valitse ryhmä',
+    'Send' => 'Lähetä',
+    'Send & decline' => 'Lähtä &amp; tallenna',
     'Send & save' => 'Lähetä &amp; tallenna',
     'Send invitation email' => 'Lähetä kutsu sähköpostilla',
     'Send invitation email again?' => 'Haluatko lähettä kutsun uudelleen?',
-    'Send invite' => 'Lähetä kutsu',
     'Settings' => 'Asetukset',
     'Subject' => 'Aihe',
     'The following list contains all pending sign-ups and invites.' => 'Luettelo sisältää kaikki vireillä olevat kirjautumiset ja kutsut.',
@@ -120,45 +124,106 @@ return [
     'never' => 'ei koskaan',
     '<strong>Profile</strong> Permissions' => '',
     '<strong>Warning:</strong> All individual profile permission settings are reset to the default values!' => '',
+    'About the account request for \'{displayName}\'.' => '',
     'Administrator group could not be deleted!' => '',
+    'All existing Profile Topics will be converted to Global Topics.' => '',
     'All open registration invitations were successfully deleted.' => '',
+    'All open registration invitations were successfully re-sent.' => '',
+    'Allow individual topics on profiles' => '',
+    'Allow users to block each other' => '',
     'Allow users to set individual permissions for their own profile?' => '',
     'Applied to new or existing users without any other group membership.' => '',
+    'Approve all selected' => '',
+    'Are you really sure? The selected users will be approved and notified by e-mail.' => '',
+    'Are you really sure? The selected users will be deleted and notified by e-mail.' => '',
+    'Are you really sure? The selected users will be notified by e-mail.' => '',
     'Are you really sure? Users who are not assigned to another group are automatically assigned to the default group.' => '',
-    'Deactivate' => '',
+    'Cannot resend invitation email!' => '',
+    'Convert' => '',
+    'Convert Profile Topics' => '',
+    'Could not approve the user!' => '',
+    'Could not decline the user!' => '',
+    'Could not send the message to the user!' => '',
     'Deactivate individual profile permissions?' => '',
+    'Decline all selected' => '',
     'Default Profile Permissions' => '',
     'Default Sorting' => '',
-    'Default groups can not be deleted!' => '',
+    'Default content of the email when sending a message to the user' => '',
+    'Default group can not be deleted!' => '',
     'Delete All' => '',
+    'Delete pending registrations?' => '',
+    'Do you really want to delete pending registrations?' => '',
+    'Do you really want to re-send the invitations to pending registration users?' => '',
     'Edit category' => '',
+    'Email all selected' => '',
     'Enable individual profile permissions' => '',
-    'Hello {displayName},<br><br>
-Your account has been activated.<br><br>
-Click here to login:<br>
-{loginLink}<br><br>
+    'Hello {displayName},
 
-Kind Regards<br>
-{AdminName}<br><br>' => '',
-    'Hello {displayName},<br><br>
-Your account request has been declined.<br><br>
+Your account creation is under review.
+Could you tell us the motivation behind your registration?
 
-Kind Regards<br>
-{AdminName} <br><br> ' => '',
+Kind Regards
+{AdminName}
+
+' => '',
+    'Hello {displayName},
+
+Your account has been activated.
+
+Click here to login:
+{loginUrl}
+
+Kind Regards
+{AdminName}
+
+' => '',
+    'Hello {displayName},
+
+Your account request has been declined.
+
+Kind Regards
+{AdminName}
+
+' => '',
+    'Hide online status of users' => '',
+    'If enabled, the Group Manager will need to approve registration.' => '',
     'If individual profile permissions are not allowed, the following settings are unchangeable for all users. If individual profile permissions are allowed, the settings are only set as defaults that users can customise. The following entries are then displayed in the same form in the users profile settings:' => '',
     'Information 1' => '',
     'Information 2' => '',
     'Information 3' => '',
+    'Invisible' => '',
+    'Invite new people' => '',
     'Make the group selectable at registration.' => '',
+    'Members can invite external users by link' => '',
+    'No users were selected.' => '',
     'Not visible' => '',
+    'Post-registration approval required' => '',
     'Prioritised User Group' => '',
     'Profile Permissions' => '',
+    'Protected group can not be deleted!' => '',
+    'Re-send to all' => '',
+    'Resend invitation?' => '',
+    'Resend invitations?' => '',
     'Select a prioritised group whose members are displayed before all others when the sorting option \'Default\' is selected. The users within the group and the users outside the group are additionally sorted by their last login.' => '',
+    'Select the profile fields you want to add as columns' => '',
     'Select which user information should be displayed in the \'People\' overview. You can select any profile fields, even those you have created individually. ' => '',
+    'Send a message' => '',
+    'Send a message to <strong>{displayName}</strong> ' => '',
     'Send notifications to users when added to or removed from the group.' => '',
     'Show group selection at registration' => '',
     'The Space memberships of all group members will be updated. This may take up to several minutes.' => '',
+    'The default user idle timeout is used when user session is idle for a certain time. The user is automatically logged out after this time.' => '',
+    'The message has been sent by email.' => '',
+    'The registration was approved and the user was notified by email.' => '',
+    'The registration was declined and the user was notified by email.' => '',
+    'The registrations were approved and the users were notified by email.' => '',
+    'The registrations were declined and the users were notified by email.' => '',
     'The selected invitations have been successfully deleted!' => '',
+    'The selected invitations have been successfully re-sent!' => '',
+    'The user cannot be removed from this Group!' => '',
+    'The user cannot be removed from this Group, as users are required to be assigned to at least one Group.' => '',
+    'The users were notified by email.' => '',
     'This option allows you to determine whether users may set individual permissions for their own profiles.' => '',
     'Will be used as a filter in \'People\'.' => '',
+    '{nbMsgSent} already sent' => '',
 ];

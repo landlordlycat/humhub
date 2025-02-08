@@ -20,6 +20,10 @@ use humhub\modules\user\models\User;
  */
 abstract class BaseTypeVirtual extends BaseType
 {
+    /**
+     * @inheritdoc
+     */
+    public $type = 'hidden';
 
     /**
      * @inheritdoc
@@ -30,9 +34,9 @@ abstract class BaseTypeVirtual extends BaseType
     /**
      * @inheritdoc
      */
-    final public function getUserValue($user, $raw = true)
+    final public function getUserValue(User $user, bool $raw = true, bool $encode = true): ?string
     {
-        return $this->getVirtualUserValue($user, $raw);
+        return $this->getVirtualUserValue($user, $raw, $encode);
     }
 
     /**
@@ -44,19 +48,18 @@ abstract class BaseTypeVirtual extends BaseType
             get_class($this) => [
                 'type' => 'form',
                 'title' => '',
-                'elements' => []
+                'elements' => [],
             ]]);
     }
 
     /**
      * @inheritdoc
      */
-    public function getFieldFormDefinition()
+    public function getFieldFormDefinition(User $user = null, array $options = []): array
     {
-        return [$this->profileField->internal_name => [
-            'type' => 'hidden',
+        return parent::getFieldFormDefinition($user, array_merge([
             'isVisible' => false,
-        ]];
+        ], $options));
     }
 
     /**
@@ -68,13 +71,14 @@ abstract class BaseTypeVirtual extends BaseType
     }
 
     /**
-     * Returns the readonly virutal value for the given User
+     * Returns the readonly virtual value for the given User
      *
      * @param User $user
      * @param bool $raw
-     * @return mixed
+     * @param bool $encode
+     * @return string
      */
-    abstract protected function getVirtualUserValue($user, $raw = true);
+    abstract protected function getVirtualUserValue(User $user, bool $raw = true, bool $encode = true): string;
 
     /**
      * @inheritDoc

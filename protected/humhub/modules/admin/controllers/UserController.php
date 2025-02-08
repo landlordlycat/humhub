@@ -1,4 +1,5 @@
 <?php
+
 /**
  * @link https://www.humhub.org/
  * @copyright Copyright (c) 2017 HumHub GmbH & Co. KG
@@ -19,14 +20,18 @@ use humhub\modules\admin\models\UserSearch;
 use humhub\modules\admin\permissions\ManageGroups;
 use humhub\modules\admin\permissions\ManageSettings;
 use humhub\modules\admin\permissions\ManageUsers;
+use humhub\modules\user\models\forms\Invite as InviteForm;
 use humhub\modules\user\models\forms\Registration;
 use humhub\modules\user\models\Invite;
 use humhub\modules\user\models\Profile;
 use humhub\modules\user\models\ProfileField;
 use humhub\modules\user\models\User;
+use humhub\modules\user\services\LinkRegistrationService;
 use Yii;
+use yii\base\Exception;
 use yii\db\Query;
 use yii\web\HttpException;
+use yii\web\Response;
 
 /**
  * User management
@@ -35,7 +40,6 @@ use yii\web\HttpException;
  */
 class UserController extends Controller
 {
-
     /**
      * @inheritdoc
      */
@@ -55,11 +59,11 @@ class UserController extends Controller
     /**
      * @inheritdoc
      */
-    public function getAccessRules()
+    protected function getAccessRules()
     {
         return [
             ['permissions' => [ManageUsers::class, ManageGroups::class]],
-            ['permissions' => [ManageSettings::class], 'actions' => ['index']]
+            ['permissions' => [ManageSettings::class], 'actions' => ['index']],
         ];
     }
 
@@ -82,12 +86,13 @@ class UserController extends Controller
         $searchModel = new UserSearch();
         $searchModel->status = User::STATUS_ENABLED;
         $dataProvider = $searchModel->search(Yii::$app->request->queryParams);
-        $showPendingRegistrations = (Invite::find()->count() > 0 && Yii::$app->user->can([new ManageUsers(), new ManageGroups()]));
+        $showPendingRegistrations = Invite::find()->where(Invite::filterSource())->exists() &&
+            Yii::$app->user->can([ManageUsers::class, ManageGroups::class]);
 
         return $this->render('list', [
             'dataProvider' => $dataProvider,
             'searchModel' => $searchModel,
-            'showPendingRegistrations' => $showPendingRegistrations
+            'showPendingRegistrations' => $showPendingRegistrations,
         ]);
     }
 
@@ -99,19 +104,21 @@ class UserController extends Controller
     public function actionEdit()
     {
         $user = UserEditForm::findOne(['id' => Yii::$app->request->get('id')]);
-        $user->initGroupSelection();
 
-        if ($user == null) {
+        if ($user === null) {
             throw new HttpException(404, Yii::t('AdminModule.user', 'User not found!'));
         }
 
-        $canEditAdminFields = Yii::$app->user->isAdmin() || !$user->isSystemAdmin();
+        $user->initGroupSelection();
 
-        $user->scenario = 'editAdmin';
-        $user->profile->scenario = Profile::SCENARIO_EDIT_ADMIN;
+        if ($user->canEditAdminFields()) {
+            $user->scenario = User::SCENARIO_EDIT_ADMIN;
+            $user->profile->scenario = Profile::SCENARIO_EDIT_ADMIN;
+        }
+
         $profile = $user->profile;
 
-        if ($canEditAdminFields) {
+        if ($user->canEditPassword()) {
             if (!($password = PasswordEditForm::findOne(['user_id' => $user->id]))) {
                 $password = new PasswordEditForm();
                 $password->user_id = $user->id;
@@ -136,11 +143,13 @@ class UserController extends Controller
                     'type' => 'text',
                     'class' => 'form-control',
                     'maxlength' => 25,
+                    'readonly' => !$user->getAuthClientUserService()->canChangeUsername(),
                 ],
                 'email' => [
                     'type' => 'text',
                     'class' => 'form-control',
                     'maxlength' => 100,
+                    'readonly' => !$user->getAuthClientUserService()->canChangeEmail(),
                 ],
                 'groupSelection' => [
                     'id' => 'user_edit_groups',
@@ -148,28 +157,31 @@ class UserController extends Controller
                     'items' => UserEditForm::getGroupItems(),
                     'options' => [
                         'data-placeholder' => Yii::t('AdminModule.user', 'Select Groups'),
-                        'data-placeholder-more' => Yii::t('AdminModule.user', 'Add Groups...')
+                        'data-placeholder-more' => Yii::t('AdminModule.user', 'Add Groups...'),
+                        'data-tags' => 'false',
                     ],
                     'maxSelection' => 250,
-                    'isVisible' => Yii::$app->user->can(new ManageGroups())
+                    'isVisible' => Yii::$app->user->can(new ManageGroups()),
                 ],
             ],
         ];
 
-        if ($canEditAdminFields) {
+        if ($user->canEditAdminFields()) {
             $definition['elements']['User']['elements']['status'] = [
                 'type' => 'dropdownlist',
                 'class' => 'form-control',
-                'items' => [
-                    User::STATUS_ENABLED => Yii::t('AdminModule.user', 'Enabled'),
-                    User::STATUS_DISABLED => Yii::t('AdminModule.user', 'Disabled'),
-                    User::STATUS_NEED_APPROVAL => Yii::t('AdminModule.user', 'Unapproved'),
-                ],
+                'items' => User::getStatusOptions(false),
+            ];
+
+            $definition['elements']['User']['elements']['visibility'] = [
+                'type' => 'dropdownlist',
+                'class' => 'form-control',
+                'items' => User::getVisibilityOptions(),
             ];
         }
 
         // Change Password Form
-        if ($canEditAdminFields) {
+        if ($user->canEditPassword()) {
             $definition['elements']['Password'] = [
                 'type' => 'form',
                 'title' => Yii::t('AdminModule.user', 'Password'),
@@ -206,27 +218,28 @@ class UserController extends Controller
 
         ];
 
-        if ($canEditAdminFields) {
-            if (!$user->isCurrentUser()) {
-                $definition['buttons']['delete'] = [
-                    'type' => 'submit',
-                    'label' => Yii::t('AdminModule.user', 'Delete'),
-                    'class' => 'btn btn-danger',
-                ];
-            }
+        if ($user->canEditAdminFields() && !$user->isCurrentUser()) {
+            $definition['buttons']['delete'] = [
+                'type' => 'submit',
+                'label' => Yii::t('AdminModule.user', 'Delete'),
+                'class' => 'btn btn-danger',
+            ];
         }
 
         $form = new HForm($definition);
         $form->models['User'] = $user;
         $form->models['Profile'] = $profile;
-        if ($canEditAdminFields) {
+        if ($user->canEditPassword()) {
             $form->models['Password'] = $password;
         }
 
         if ($form->submitted('save') && $form->validate()) {
-            if ($canEditAdminFields) {
+            if ($user->canEditPassword()) {
                 if (!empty($password->newPassword)) {
                     $password->setPassword($password->newPassword);
+                } elseif ($user->canEditAdminFields()) {
+                    // Allow admin to save user without password
+                    unset($form->models['Password']);
                 }
                 $user->setMustChangePassword($password->mustChangePassword);
             }
@@ -242,7 +255,7 @@ class UserController extends Controller
 
         return $this->render('edit', [
             'hForm' => $form,
-            'user' => $user
+            'user' => $user,
         ]);
     }
 
@@ -252,11 +265,18 @@ class UserController extends Controller
         $registration->enableEmailField = true;
         $registration->enableUserApproval = false;
         $registration->enableMustChangePassword = true;
+
         if ($registration->submitted('save') && $registration->validate() && $registration->register()) {
             return $this->redirect(['edit', 'id' => $registration->getUser()->id]);
         }
 
-        return $this->render('add', ['hForm' => $registration]);
+        $invite = new InviteForm(['target' => LinkRegistrationService::TARGET_ADMIN]);
+
+        return $this->render('add', [
+            'hForm' => $registration,
+            'canInviteByEmail' => $invite->canInviteByEmail(),
+            'canInviteByLink' => $invite->canInviteByLink(),
+        ]);
     }
 
     /**
@@ -353,37 +373,20 @@ class UserController extends Controller
 
         $this->checkUserAccess($user);
 
-        if (!static::canImpersonate($user)) {
+        if (!Yii::$app->user->impersonate($user)) {
             throw new HttpException(403);
         }
-
-        Yii::$app->user->switchIdentity($user);
 
         return $this->goHome();
     }
 
     /**
-     * Determines if the current user can impersonate given user.
-     *
-     * @param User $user
-     * @return boolean can impersonate
-     */
-    public static function canImpersonate($user)
-    {
-        if (!Yii::$app->getModule('admin')->allowUserImpersonate) {
-            return false;
-        }
-
-        return Yii::$app->user->can([new ManageUsers()]) && $user->id != Yii::$app->user->getIdentity()->id;
-    }
-
-    /**
      * Export user list as csv or xlsx
      * @param string $format supported format by phpspreadsheet
-     * @return \yii\web\Response
+     * @return Response
      * @throws \PhpOffice\PhpSpreadsheet\Exception
      * @throws \PhpOffice\PhpSpreadsheet\Writer\Exception
-     * @throws \yii\base\Exception
+     * @throws Exception
      */
     public function actionExport($format)
     {

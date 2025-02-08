@@ -7,6 +7,8 @@ use humhub\modules\comment\permissions\CreateComment;
 use humhub\modules\comment\notifications\NewComment;
 use humhub\modules\content\components\ContentActiveRecord;
 use Yii;
+use yii\base\Exception;
+use yii\base\InvalidConfigException;
 
 /**
  * CommentModule adds the comment content addon functionalities.
@@ -16,7 +18,6 @@ use Yii;
  */
 class Module extends \humhub\components\Module
 {
-
     /**
      * Maximum comments to load at once
      *
@@ -30,13 +31,23 @@ class Module extends \humhub\components\Module
     public $commentsPreviewMax = 2;
 
     /**
+     * @var int Maximum comments to load at once on VIEW mode
+     */
+    public $commentsBlockLoadSizeViewMode = 25;
+
+    /**
+     * @var int Maximum comments to show initially on VIEW mode
+     */
+    public $commentsPreviewMaxViewMode = 25;
+
+    /**
      * @inheritdoc
      */
     public function getPermissions($contentContainer = null)
     {
         if ($contentContainer) {
             return [
-                new permissions\CreateComment()
+                new permissions\CreateComment(),
             ];
         }
 
@@ -57,7 +68,7 @@ class Module extends \humhub\components\Module
     public function getNotifications()
     {
         return [
-            NewComment::class
+            NewComment::class,
         ];
     }
 
@@ -65,9 +76,9 @@ class Module extends \humhub\components\Module
      * Checks if given content object can be commented by current user
      *
      * @param Comment|ContentActiveRecord $object
-     * @return boolean can comment
-     * @throws \yii\base\Exception
-     * @throws \yii\base\InvalidConfigException
+     * @return bool can comment
+     * @throws Exception
+     * @throws InvalidConfigException
      */
     public function canComment($object)
     {
@@ -75,17 +86,20 @@ class Module extends \humhub\components\Module
             return false;
         }
 
-        // Only allow one level of subcomments
-        if (Comment::isSubComment($object)) {
+        $content = $object->content;
+
+        if (!$content->getStateService()->isPublished()) {
             return false;
         }
 
-        $content = $object->content;
-
-        if($content->container) {
+        if ($content->container) {
             if (!$content->container->permissionManager->can(CreateComment::class)) {
                 return false;
             }
+        }
+
+        if ($content->isLockedComments()) {
+            return false;
         }
 
         if ($content->isArchived()) {

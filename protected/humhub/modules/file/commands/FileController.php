@@ -10,7 +10,9 @@ namespace humhub\modules\file\commands;
 
 use humhub\modules\file\libs\ImageHelper;
 use humhub\modules\file\models\File;
+use humhub\modules\file\models\FileHistory;
 use Yii;
+use yii\console\Controller;
 use yii\console\widgets\Table;
 
 /**
@@ -18,9 +20,8 @@ use yii\console\widgets\Table;
  *
  * @since 1.7
  */
-class FileController extends \yii\console\Controller
+class FileController extends Controller
 {
-
     /**
      * Overview of uploaded files and automatically generated variants.
      */
@@ -70,7 +71,7 @@ class FileController extends \yii\console\Controller
 
         /** @var File $file */
         foreach (File::find()->each() as $file) {
-            foreach ($file->store->getVariants() as $variant) {
+            foreach ($file->store->getVariants([FileHistory::VARIANT_PREFIX . '*']) as $variant) {
                 $file->store->delete($variant);
                 $this->stdout('.');
             }

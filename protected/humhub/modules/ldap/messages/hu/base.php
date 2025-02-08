@@ -1,7 +1,6 @@
 <?php
 
 return [
-    'A TLS/SSL is strongly favored in production environments to prevent passwords from be transmitted in clear text.' => 'A TLS/SSL-t előnyben részesítik a termelési környezetekben, hogy megakadályozzák a jelszavak egyértelmű szövegként való átvitelét.',
     'Base DN' => 'Bázis DN',
     'Defines the filter to apply, when login is attempted. %s replaces the username in the login action. Example: &quot;(sAMAccountName=%s)&quot; or &quot;(uid=%s)&quot;' => 'Meghatározza az alkalmazandó szűrőt, amikor a bejelentkezés megtörténik. A %-ok  helyettesítik a felhasználónevet a bejelentkezési művelet során. Példa: "(sAMAccountName=%s)" or "(uid=%s)"',
     'E-Mail Address Attribute' => 'E-mail cím attribútum',
@@ -10,12 +9,14 @@ return [
     'Fetch/Update Users Automatically' => 'Felhasználók automatikus lekérése/frissítése',
     'Hostname' => 'Hosztnév',
     'ID Attribute' => 'ID attribútum',
+    'Ignored LDAP entries' => 'Figyelmen kívül hagyott LDAP-bejegyzések',
     'LDAP' => 'LDAP',
     'LDAP Attribute for E-Mail Address. Default: &quot;mail&quot;' => 'LDAP attribútum az e-mail címhez. Alapértelmezés: "mail"',
     'LDAP Attribute for Username. Example: &quot;uid&quot; or &quot;sAMAccountName&quot;' => 'LDAP attribútum a felhasználónévhez. Példa: "uid" or "sAMAccountName"',
     'Limit access to users meeting this criteria. Example: &quot;(objectClass=posixAccount)&quot; or &quot;(&(objectClass=person)(memberOf=CN=Workers,CN=Users,DC=myDomain,DC=com))&quot;' => 'Korlátozza az e feltételeknek megfelelő felhasználók hozzáférését. Példa: "(objectClass=posixAccount)" or "(&amp;(objectClass=person)(memberOf=CN=Workers,CN=Users,DC=myDomain,DC=com))"',
     'Login Filter' => 'Bejelentkezés szűrő',
     'Not changeable LDAP attribute to unambiguously identify the user in the directory. If empty the user will be determined automatically by e-mail address or username. Examples: objectguid (ActiveDirectory) or uidNumber (OpenLDAP)' => 'Nem változtatható LDAP attribútum, amely azonosítja a felhasználót a könyvtárban. Ha üres, akkor a felhasználó automatikusan email címmel vagy felhasználónévvel lesz meghatározva. Példák: objectguid (ActiveDirectory) vagy uidNumber (OpenLDAP)',
+    'One DN per line which should not be imported automatically.' => 'Soronként egy DN, amelyet nem szabad automatikusan importálni.',
     'Password' => 'Jelszó',
     'Port' => 'Port',
     'Specify your LDAP-backend used to fetch user accounts.' => 'A felhasználói fiókok lekéréséhez használt LDAP-backend meghatározása.',
@@ -28,6 +29,4 @@ return [
     'User Filter' => 'Felhasználói szűrő',
     'Username' => 'Felhasználónév',
     'Username Attribute' => 'Felhasználónév attribútuma',
-    'Ignored LDAP entries' => '',
-    'One DN per line which should not be imported automatically.' => '',
 ];

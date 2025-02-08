@@ -19,7 +19,6 @@ use humhub\modules\ui\form\widgets\JsInputWidget;
  */
 class ColorPicker extends JsInputWidget
 {
-
     /**
      * @deprecated since v1.2.2 use $attribute instead
      */
@@ -49,7 +48,8 @@ class ColorPicker extends JsInputWidget
             $this->attribute = $this->field;
         }
 
-        if($this->hasModel() && !$this->getValue() && $this->randomDefault) {
+        if (($this->hasModel() && !$this->getValue() && $this->randomDefault) ||
+            !$this->isCorrectColorValue()) {
             $attr = $this->attribute;
             $this->model->$attr = RandomColor::one(['luminosity' => 'dark']);
         }
@@ -64,8 +64,13 @@ class ColorPicker extends JsInputWidget
             'model' => $this->model,
             'field' => $this->attribute,
             'container' => $this->container,
-            'inputId' => $this->getId(true)
+            'inputId' => $this->getId(true),
         ]);
+    }
+
+    private function isCorrectColorValue(): bool
+    {
+        return preg_match('/^#[a-f0-9]{3,6}$/i', $this->model->{$this->attribute});
     }
 
 }

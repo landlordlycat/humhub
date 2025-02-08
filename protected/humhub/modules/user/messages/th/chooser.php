@@ -1,10 +1,11 @@
 <?php
 return array (
+  'Add user' => 'เพิ่มผู้ใช้',
   'An unexpected error occurred while loading the result.' => 'เกิดข้อผิดพลาดที่ไม่คาดคิดขณะโหลดผลลัพธ์',
   'Load more' => 'โหลดเพิ่ม',
+  'No results found.' => '',
   'No users found for the given query.' => 'ไม่พบผู้ใช้สำหรับข้อความค้นหาที่ระบุ',
   'Please enter at least {n} character' => 'โปรดป้อนอักขระอย่างน้อย {n} ตัว',
-  'Select user...' => 'เลือกผู้ใช้...',
   'Select {n,plural,=1{item} other{items}}' => 'Select {n,plural,=1{item} other{items}}',
   'Select {n,plural,=1{user} other{users}}' => 'Select {n,plural,=1{user} other{users}}',
   'Select...' => 'เลือก...',

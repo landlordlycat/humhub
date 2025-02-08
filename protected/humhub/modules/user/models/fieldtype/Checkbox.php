@@ -8,7 +8,9 @@
 
 namespace humhub\modules\user\models\fieldtype;
 
+use humhub\libs\Html;
 use humhub\modules\user\models\Profile;
+use humhub\modules\user\models\User;
 use Yii;
 
 /**
@@ -19,6 +21,10 @@ use Yii;
  */
 class Checkbox extends BaseType
 {
+    /**
+     * @inheritdoc
+     */
+    public $type = 'checkbox';
 
     /**
      * Field Default Checkbox
@@ -35,7 +41,7 @@ class Checkbox extends BaseType
     public function rules()
     {
         return [
-            [['default'], 'in', 'range' => [0, 1]]
+            [['default'], 'in', 'range' => [0, 1]],
         ];
     }
 
@@ -57,11 +63,11 @@ class Checkbox extends BaseType
                         'type' => 'dropdownlist',
                         'items' => [
                             0 => 'Unchecked',
-                            1 => 'Checked'
-                        ]
-                    ]
-                ]
-            ]
+                            1 => 'Checked',
+                        ],
+                    ],
+                ],
+            ],
         ]);
     }
 
@@ -71,8 +77,8 @@ class Checkbox extends BaseType
     public function save()
     {
         $columnName = $this->profileField->internal_name;
-        if (!\humhub\modules\user\models\Profile::columnExists($columnName)) {
-            $query = Yii::$app->db->getQueryBuilder()->addColumn(\humhub\modules\user\models\Profile::tableName(), $columnName, 'INT(1) DEFAULT '.$this->default);
+        if (!Profile::columnExists($columnName)) {
+            $query = Yii::$app->db->getQueryBuilder()->addColumn(Profile::tableName(), $columnName, 'INT(1) DEFAULT ' . $this->default);
             Yii::$app->db->createCommand($query)->execute();
         }
 
@@ -89,7 +95,7 @@ class Checkbox extends BaseType
     {
         $profileField = $this->profileField;
         if ($profileField->required) {
-            $rules[] = [$profileField->internal_name, function($attribute) use ($profileField) {
+            $rules[] = [$profileField->internal_name, function ($attribute) use ($profileField) {
                 if (!$this->$attribute) {
                     $this->addError($attribute, Yii::t('UserModule.profile', '{attribute} is required!', ['{attribute}' => $profileField->title]));
                 }
@@ -100,31 +106,22 @@ class Checkbox extends BaseType
         return parent::getFieldRules($rules);
     }
 
-
-    /**
-     * Return the Form Element to edit the value of the Field
-     */
-    public function getFieldFormDefinition()
-    {
-        return [$this->profileField->internal_name => [
-            'type' => 'checkbox',
-            'class' => 'form-control',
-        ]];
-    }
-
     /**
      * @inheritdoc
      */
-    public function getUserValue($user, $raw = true)
+    public function getUserValue(User $user, bool $raw = true, bool $encode = true): ?string
     {
         $internalName = $this->profileField->internal_name;
-
         $value = $user->profile->$internalName;
-        if (!$raw && !empty($value)) {
-            $labels = $this->getLabels();
-            return $labels[$internalName];
+
+        if (empty($value)) {
+            return '';
         }
 
-        return $value;
+        if (!$raw) {
+            $value = $this->getLabels()[$internalName] ?? '';
+        }
+
+        return $encode ? Html::encode($value) : $value;
     }
 }

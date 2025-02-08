@@ -10,7 +10,6 @@ use tests\codeception\_support\BasePage;
  */
 class LoginPage extends BasePage
 {
-
     public $route = 'user/auth/login';
 
     /**
@@ -19,19 +18,20 @@ class LoginPage extends BasePage
      */
     public function login($username, $password)
     {
-        if(method_exists($this->actor, 'waitForText')) {
+        if (method_exists($this->actor, 'waitForText')) {
             $this->actor->waitForText('Please sign in');
         }
         $this->actor->fillField('Login[username]', $username);
         $this->actor->fillField('Login[password]', $password);
         $this->actor->click('#login-button');
     }
-    
+
     public function selfInvite($email)
     {
+        $this->actor->fillField('Invite[email]', $email);
         $this->actor->submitForm('#invite-form', ['Invite' => [
-            'email' => $email
-       ]]);
+            'email' => $email,
+        ]]);
     }
 
 }

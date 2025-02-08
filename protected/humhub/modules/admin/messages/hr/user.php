@@ -19,6 +19,8 @@ return [
     'All the personal data of this user will be irrevocably deleted.' => 'Svi osobni podaci ovog korisnika bit će neopozivo izbrisani.',
     'Allow' => 'Dopusti',
     'Allow visitors limited access to content without an account (Adds visibility: "Guest")' => 'Dopusti ograničen pristup za neautentificirane korisnike (gosti)',
+    'Apply' => 'Primijeni',
+    'Approve' => 'Odobri',
     'Are you really sure that you want to disable this user?' => 'Jeste li sigurni da želite onemogućiti ovog korisnika?',
     'Are you really sure that you want to enable this user?' => 'Jeste li sigurni da želite omogućiti ovog korisnika?',
     'Are you really sure that you want to impersonate this user?' => 'Jeste li sigurni da želite oponašati tog korisnika?',
@@ -30,6 +32,7 @@ return [
     'Create new group' => 'Kreiraj novu grupu',
     'Create new profile category' => 'Kreiraj novu kategoriju profila',
     'Create new profile field' => 'Kreiraj novo polje za profil',
+    'Decline' => 'Odbij',
     'Decline & delete user: <strong>{displayName}</strong>' => 'Odbij i obriši korisnika: <strong>{displayName}</strong>',
     'Default' => 'Zadano',
     'Default content of the registration approval email' => 'Zadani sadržaj e-adrese za odobrenje registracije',
@@ -41,12 +44,14 @@ return [
     'Delete invitation' => 'Izbriši pozivnicu',
     'Delete invitation?' => 'Želite li izbrisati pozivnicu?',
     'Delete spaces which are owned by this user' => 'Brisanje prostora koji su u vlasništvu ovog korisnika',
+    'Deleted' => 'Obrisano',
     'Deleted invitation' => 'Izbrisana pozivnica',
     'Deleted users' => 'Izbrisani korisnici',
     'Disable' => 'Isključi',
     'Disabled' => 'Onemogućeno',
     'Disabled users' => 'Korisnici s invaliditetom',
     'Do not change placeholders like {displayName} if you want them to be automatically filled by the system. To reset the email content fields with the system default, leave them empty.' => 'Nemojte mijenjati zamjenske oznake poput {displayName} ako želite da ih automatski popuni sustav. Da biste resetirali polja sadržaja e-pošte s zadanim postavkama sustava, ostavite ih praznima.',
+    'Edit' => 'Uredi',
     'Edit category' => 'Uredi kategoriju',
     'Edit profile category' => 'Obriši kategoriju profila',
     'Edit profile field' => 'Uredi polje profila',
@@ -58,22 +63,9 @@ return [
     'Group not found!' => 'Grupa nije pronađena!',
     'Group user not found!' => 'Korisnik grupe nije pronađen!',
     'Groups' => 'Grupe',
-    'Hello {displayName},<br><br>
-Your account has been activated.<br><br>
-Click here to login:<br>
-{loginLink}<br><br>
-
-Kind Regards<br>
-{AdminName}<br><br>' => 'Pozdrav, {displayName},<br><br> Vaš račun je aktiviran.<br><br> Kliknite ovdje za prijavu:<br> {loginLink}<br><br> Lijepi pozdrav<br> {AdminName}<br><br>',
-    'Hello {displayName},<br><br>
-Your account request has been declined.<br><br>
-
-Kind Regards<br>
-{AdminName} <br><br> ' => 'Pozdrav, {displayName},<br><br> Zahtjev za vaš račun je odbijen.<br><br> Lijepi pozdrav<br> {AdminName} <br><br>',
     'Here you can create or edit profile categories and fields.' => 'Ovdje možete kreirati ili urediti profile kategorija i polja.',
     'If this option is not selected, the ownership of the spaces will be transferred to your account.' => 'Ako ova opcija nije odabrana, vlasništvo nad prostorima bit će preneseno na vaš račun.',
     'Impersonate' => 'Predstavljati',
-    'Include captcha in registration form' => 'Uključite captcha u obrazac za registraciju',
     'Invite not found!' => 'Poziv nije pronađen!',
     'Last login' => 'Posljednja prijava',
     'Last name' => 'Prezime',
@@ -85,7 +77,6 @@ Kind Regards<br>
     'Members' => 'Članovi',
     'Members can invite external users by email' => 'Članovi mogu pozvati eksterne korisnike putem e-pošte',
     'Message' => 'Posruka',
-    'Min value is 20 seconds. If not set, session will timeout after 1400 seconds (24 minutes) regardless of activity (default session timeout)' => 'Min vrijednost je 20 sekundi. Ako nije postavljeno, sesija će se zaustaviti nakon 1400 sekundi (24 minute) bez obzira na aktivnost (zadano vrijeme isteka sesije)',
     'New approval requests' => 'Novi zahjtevi za odobrenje',
     'New users can register' => 'Anonimni korisnici mogu se registrirati',
     'No' => 'Ne',
@@ -101,16 +92,17 @@ Kind Regards<br>
     'Permanently delete' => 'Trajno brisanje',
     'Permissions' => 'Dozvole',
     'Profiles' => 'Profili',
+    'Protected' => 'Zaštićeno',
     'Remove from group' => 'Ukloni iz grupe',
-    'Require group admin approval after registration' => 'Potrebna dozvola administratora grupe nakon registracije',
     'Resend invitation email' => 'Ponovno pošaljite email s pozivom',
     'Save' => 'Spremi',
     'Search by name, email or id.' => 'Pretraživanje po imenu, e-pošti ili ID-u.',
     'Select Groups' => 'Odaberi grupe',
+    'Send' => 'Pošalji',
+    'Send & decline' => 'Pošalji & odbaci',
     'Send & save' => 'Pošalji i spremi',
     'Send invitation email' => 'Pošaljite pozivnicu e-mailom',
     'Send invitation email again?' => 'Ponovno poslati pozivnicu e-poštom?',
-    'Send invite' => 'Pošalji poziv',
     'Settings' => 'Postavke',
     'Subject' => 'Predmet',
     'The following list contains all pending sign-ups and invites.' => 'Sljedeći popis sadrži sve prijave i pozivnice na čekanju.',
@@ -133,32 +125,105 @@ Kind Regards<br>
     'never' => 'nikada',
     '<strong>Profile</strong> Permissions' => '',
     '<strong>Warning:</strong> All individual profile permission settings are reset to the default values!' => '',
+    'About the account request for \'{displayName}\'.' => '',
     'Administrator group could not be deleted!' => '',
+    'All existing Profile Topics will be converted to Global Topics.' => '',
     'All open registration invitations were successfully deleted.' => '',
+    'All open registration invitations were successfully re-sent.' => '',
+    'Allow individual topics on profiles' => '',
+    'Allow users to block each other' => '',
     'Allow users to set individual permissions for their own profile?' => '',
     'Applied to new or existing users without any other group membership.' => '',
+    'Approve all selected' => '',
+    'Are you really sure? The selected users will be approved and notified by e-mail.' => '',
+    'Are you really sure? The selected users will be deleted and notified by e-mail.' => '',
+    'Are you really sure? The selected users will be notified by e-mail.' => '',
     'Are you really sure? Users who are not assigned to another group are automatically assigned to the default group.' => '',
-    'Deactivate' => '',
+    'Cannot resend invitation email!' => '',
+    'Convert' => '',
+    'Convert Profile Topics' => '',
+    'Could not approve the user!' => '',
+    'Could not decline the user!' => '',
+    'Could not send the message to the user!' => '',
     'Deactivate individual profile permissions?' => '',
+    'Decline all selected' => '',
     'Default Profile Permissions' => '',
     'Default Sorting' => '',
-    'Default groups can not be deleted!' => '',
+    'Default content of the email when sending a message to the user' => '',
+    'Default group can not be deleted!' => '',
     'Delete All' => '',
+    'Delete pending registrations?' => '',
+    'Do you really want to delete pending registrations?' => '',
+    'Do you really want to re-send the invitations to pending registration users?' => '',
+    'Email all selected' => '',
     'Enable individual profile permissions' => '',
+    'Hello {displayName},
+
+Your account creation is under review.
+Could you tell us the motivation behind your registration?
+
+Kind Regards
+{AdminName}
+
+' => '',
+    'Hello {displayName},
+
+Your account has been activated.
+
+Click here to login:
+{loginUrl}
+
+Kind Regards
+{AdminName}
+
+' => '',
+    'Hello {displayName},
+
+Your account request has been declined.
+
+Kind Regards
+{AdminName}
+
+' => '',
+    'Hide online status of users' => '',
+    'If enabled, the Group Manager will need to approve registration.' => '',
     'If individual profile permissions are not allowed, the following settings are unchangeable for all users. If individual profile permissions are allowed, the settings are only set as defaults that users can customise. The following entries are then displayed in the same form in the users profile settings:' => '',
     'Information 1' => '',
     'Information 2' => '',
     'Information 3' => '',
+    'Invisible' => '',
+    'Invite new people' => '',
     'Make the group selectable at registration.' => '',
+    'Members can invite external users by link' => '',
+    'No users were selected.' => '',
     'Not visible' => '',
+    'Post-registration approval required' => '',
     'Prioritised User Group' => '',
     'Profile Permissions' => '',
+    'Protected group can not be deleted!' => '',
+    'Re-send to all' => '',
+    'Resend invitation?' => '',
+    'Resend invitations?' => '',
     'Select a prioritised group whose members are displayed before all others when the sorting option \'Default\' is selected. The users within the group and the users outside the group are additionally sorted by their last login.' => '',
+    'Select the profile fields you want to add as columns' => '',
     'Select which user information should be displayed in the \'People\' overview. You can select any profile fields, even those you have created individually. ' => '',
+    'Send a message' => '',
+    'Send a message to <strong>{displayName}</strong> ' => '',
     'Send notifications to users when added to or removed from the group.' => '',
     'Show group selection at registration' => '',
     'The Space memberships of all group members will be updated. This may take up to several minutes.' => '',
+    'The default user idle timeout is used when user session is idle for a certain time. The user is automatically logged out after this time.' => '',
+    'The message has been sent by email.' => '',
+    'The registration was approved and the user was notified by email.' => '',
+    'The registration was declined and the user was notified by email.' => '',
+    'The registrations were approved and the users were notified by email.' => '',
+    'The registrations were declined and the users were notified by email.' => '',
     'The selected invitations have been successfully deleted!' => '',
+    'The selected invitations have been successfully re-sent!' => '',
+    'The user cannot be removed from this Group!' => '',
+    'The user cannot be removed from this Group, as users are required to be assigned to at least one Group.' => '',
+    'The users were notified by email.' => '',
     'This option allows you to determine whether users may set individual permissions for their own profiles.' => '',
     'Will be used as a filter in \'People\'.' => '',
+    '{nbMsgSent} already sent' => '',
 ];

@@ -1,4 +1,5 @@
 <?php
+
 /**
  * @link https://www.humhub.org/
  * @copyright Copyright (c) 2021 HumHub GmbH & Co. KG
@@ -11,7 +12,9 @@ use humhub\components\access\ControllerAccess;
 use humhub\components\Controller;
 use humhub\modules\user\components\PeopleQuery;
 use humhub\modules\user\permissions\PeopleAccess;
-use humhub\modules\user\widgets\PeopleCard;use Yii;
+use humhub\modules\user\widgets\PeopleCard;
+use humhub\modules\user\widgets\PeopleFilterPicker;
+use Yii;
 use yii\helpers\Url;
 
 /**
@@ -21,7 +24,6 @@ use yii\helpers\Url;
  */
 class PeopleController extends Controller
 {
-
     /**
      * @inheritdoc
      */
@@ -42,7 +44,7 @@ class PeopleController extends Controller
     /**
      * @inheritdoc
      */
-    public function getAccessRules()
+    protected function getAccessRules()
     {
         return [
             [ControllerAccess::RULE_LOGGED_IN_ONLY],
@@ -60,13 +62,12 @@ class PeopleController extends Controller
         $urlParams = Yii::$app->request->getQueryParams();
         unset($urlParams['page']);
         array_unshift($urlParams, '/user/people/load-more');
-        $this->getView()->registerJsConfig('directory', [
+        $this->getView()->registerJsConfig('cards', [
             'loadMoreUrl' => Url::to($urlParams),
         ]);
 
         return $this->render('index', [
             'people' => $peopleQuery,
-            'showInviteButton' => !Yii::$app->user->isGuest && Yii::$app->getModule('user')->settings->get('auth.internalUsersCanInvite'),
         ]);
     }
 
@@ -83,6 +84,15 @@ class PeopleController extends Controller
         }
 
         return $peopleCards;
+    }
+
+
+    /**
+     * Returns people list in JSON format filtered by keyword
+     */
+    public function actionFilterPeopleJson($field, $keyword = null)
+    {
+        return $this->asJson((new PeopleFilterPicker(['itemKey' => $field]))->getSuggestions($keyword));
     }
 
 }

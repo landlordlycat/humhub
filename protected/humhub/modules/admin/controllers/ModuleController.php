@@ -10,13 +10,14 @@ namespace humhub\modules\admin\controllers;
 
 use humhub\components\Module;
 use humhub\modules\admin\components\Controller;
+use humhub\modules\admin\jobs\DisableModuleJob;
+use humhub\modules\admin\jobs\RemoveModuleJob;
 use humhub\modules\admin\models\forms\ModuleSetAsDefaultForm;
+use humhub\modules\admin\permissions\ManageModules;
+use humhub\modules\admin\permissions\ManageSettings;
 use humhub\modules\content\components\ContentContainerModule;
-use humhub\modules\content\components\ContentContainerModuleManager;
-use humhub\modules\space\models\Space;
-use humhub\modules\user\models\User;
+use humhub\modules\queue\helpers\QueueHelper;
 use Yii;
-use yii\base\Exception;
 use yii\web\HttpException;
 
 /**
@@ -26,7 +27,6 @@ use yii\web\HttpException;
  */
 class ModuleController extends Controller
 {
-
     /**
      * @inheritdoc
      */
@@ -38,18 +38,18 @@ class ModuleController extends Controller
     public function init()
     {
         $this->appendPageTitle(Yii::t('AdminModule.base', 'Modules'));
-        $this->subLayout = '@admin/views/layouts/module';
 
-        return parent::init();
+        parent::init();
     }
 
     /**
      * @inheritdoc
      */
-    public function getAccessRules()
+    protected function getAccessRules()
     {
         return [
-            ['permissions' => \humhub\modules\admin\permissions\ManageModules::class]
+            ['permissions' => [ManageModules::class]],
+            ['permissions' => [ManageSettings::class], 'actions' => ['index', 'list']],
         ];
     }
 
@@ -59,53 +59,9 @@ class ModuleController extends Controller
         return $this->redirect(['/admin/module/list']);
     }
 
-
     public function actionList()
     {
-        $installedModules = Yii::$app->moduleManager->getModules();
-
-        return $this->render('list', [
-            'installedModules' => $installedModules,
-            'deprecatedModuleIds' => $this->getDeprecatedModules(),
-            'marketplaceUrls' => $this->getMarketplaceUrls()
-        ]);
-    }
-
-
-    private function getMarketplaceUrls()
-    {
-        $marketplaceUrls = [];
-
-        if (Yii::$app->hasModule('marketplace')) {
-            try {
-                foreach (Yii::$app->getModule('marketplace')->onlineModuleManager->getModules() as $id => $module) {
-                    if (!empty($module['marketplaceUrl'])) {
-                        $marketplaceUrls[$id] = $module['marketplaceUrl'];
-                    }
-                }
-            } catch (\Exception $ex) {
-            }
-        }
-
-        return $marketplaceUrls;
-    }
-
-
-    private function getDeprecatedModules()
-    {
-        $deprecatedModuleIds = [];
-        if (Yii::$app->hasModule('marketplace')) {
-            try {
-                foreach (Yii::$app->getModule('marketplace')->onlineModuleManager->getModules() as $id => $module) {
-                    if (!empty($module['isDeprecated'])) {
-                        $deprecatedModuleIds[] = $id;
-                    }
-                }
-            } catch (\Exception $ex) {
-            }
-        }
-
-        return $deprecatedModuleIds;
+        return $this->render('list');
     }
 
     /**
@@ -125,9 +81,15 @@ class ModuleController extends Controller
             throw new HttpException(500, Yii::t('AdminModule.modules', 'Could not find requested module!'));
         }
 
-        $module->enable();
+        if (QueueHelper::isQueued(new DisableModuleJob(['moduleId' => $moduleId]))) {
+            $this->view->error(Yii::t('AdminModule.modules', 'Deactivation of this module has not been completed yet. Please retry in a few minutes.'));
+        } elseif (QueueHelper::isQueued(new RemoveModuleJob(['moduleId' => $moduleId]))) {
+            $this->view->error(Yii::t('AdminModule.modules', 'Uninstallation of this module has not been completed yet. It will be removed in a few minutes.'));
+        } else {
+            $module->enable();
+        }
 
-        return $this->redirect(['/admin/module/list']);
+        return $this->redirectToModules();
     }
 
     /**
@@ -137,7 +99,6 @@ class ModuleController extends Controller
      */
     public function actionDisable()
     {
-
         $this->forcePostRequest();
 
         $moduleId = Yii::$app->request->get('moduleId');
@@ -147,9 +108,10 @@ class ModuleController extends Controller
             throw new HttpException(500, Yii::t('AdminModule.modules', 'Could not find requested module!'));
         }
 
-        $module->disable();
+        Yii::$app->queue->push(new DisableModuleJob(['moduleId' => $moduleId]));
+        $this->view->info(Yii::t('AdminModule.modules', 'Module deactivation in progress. This process may take a moment.'));
 
-        return $this->redirect(['/admin/module/list']);
+        return $this->redirectToModules();
     }
 
 
@@ -165,7 +127,7 @@ class ModuleController extends Controller
         $module = Yii::$app->moduleManager->getModule($moduleId);
         $module->publishAssets(true);
 
-        return $this->redirect(['/admin/module/list']);
+        return $this->redirectToModules();
     }
 
     /**
@@ -181,51 +143,22 @@ class ModuleController extends Controller
         $moduleId = Yii::$app->request->get('moduleId');
 
         if (Yii::$app->moduleManager->hasModule($moduleId) && Yii::$app->moduleManager->canRemoveModule($moduleId)) {
-
+            /* @var Module $module */
             $module = Yii::$app->moduleManager->getModule($moduleId);
 
             if ($module == null) {
                 throw new HttpException(500, Yii::t('AdminModule.modules', 'Could not find requested module!'));
             }
 
-            if (!is_writable($module->getBasePath())) {
-                throw new HttpException(500, Yii::t('AdminModule.modules', 'Module path %path% is not writeable!', ['%path%' => $module->getPath()]));
+            if (!is_writable(realpath($module->getBasePath()))) {
+                throw new HttpException(500, Yii::t('AdminModule.modules', 'Module path %path% is not writeable!', ['%path%' => $module->getBasePath()]));
             }
 
-            Yii::$app->moduleManager->removeModule($module->id);
-        }
-        return $this->redirect(['/admin/module/list']);
-    }
-
-
-    /**
-     * Returns more information about an installed module.
-     *
-     * @return string
-     * @throws HttpException
-     */
-    public function actionInfo()
-    {
-
-        $moduleId = Yii::$app->request->get('moduleId');
-        try {
-            $module = Yii::$app->moduleManager->getModule($moduleId);
-        } catch (Exception $e) {
-            throw new HttpException(404, 'Module not found!');
+            Yii::$app->queue->push(new RemoveModuleJob(['moduleId' => $moduleId]));
+            $this->view->info(Yii::t('AdminModule.modules', 'Module uninstall in progress. This process may take a moment.'));
         }
 
-        if ($module == null) {
-            throw new HttpException(500, Yii::t('AdminModule.modules', 'Could not find requested module!'));
-        }
-
-        $readmeMd = "";
-        if (file_exists($module->getBasePath() . DIRECTORY_SEPARATOR . 'README.md')) {
-            $readmeMd = file_get_contents($module->getBasePath() . DIRECTORY_SEPARATOR . 'README.md');
-        } elseif (file_exists($module->getBasePath() . DIRECTORY_SEPARATOR . 'docs' . DIRECTORY_SEPARATOR . 'README.md')) {
-            $readmeMd = file_get_contents($module->getBasePath() . DIRECTORY_SEPARATOR . 'docs' . DIRECTORY_SEPARATOR . 'README.md');
-        }
-
-        return $this->renderAjax('info', ['name' => $module->getName(), 'description' => $module->getDescription(), 'content' => $readmeMd]);
+        return $this->redirectToModules();
     }
 
     /**
@@ -244,18 +177,17 @@ class ModuleController extends Controller
             throw new HttpException(500, 'Invalid module type!');
         }
 
-        $model = new ModuleSetAsDefaultForm();
-        $model->spaceDefaultState = ContentContainerModuleManager::getDefaultState(Space::class, $moduleId);
-        $model->userDefaultState = ContentContainerModuleManager::getDefaultState(User::class, $moduleId);
-
-        if ($model->load(Yii::$app->request->post()) && $model->validate()) {
-            ContentContainerModuleManager::setDefaultState(User::class, $moduleId, $model->userDefaultState);
-            ContentContainerModuleManager::setDefaultState(Space::class, $moduleId, $model->spaceDefaultState);
+        $model = (new ModuleSetAsDefaultForm())->setModule($moduleId);
+        if ($model->load(Yii::$app->request->post()) && $model->save()) {
             return $this->renderModalClose();
         }
 
         return $this->renderAjax('setAsDefault', ['module' => $module, 'model' => $model]);
     }
 
+    private function redirectToModules()
+    {
+        return $this->redirect(['/admin/module/list']);
+    }
 
 }

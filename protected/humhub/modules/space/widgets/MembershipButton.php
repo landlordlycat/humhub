@@ -12,17 +12,17 @@ use humhub\components\Widget;
 use humhub\modules\space\models\Space;
 use Yii;
 use yii\helpers\ArrayHelper;
+use yii\helpers\Html;
 use yii\helpers\Json;
 
 /**
- * MembershipButton shows various membership related buttons in space header. 
+ * MembershipButton shows various membership related buttons in space header.
  *
  * @author luke
  * @since 0.11
  */
 class MembershipButton extends Widget
 {
-
     /**
      * @var Space
      */
@@ -38,7 +38,7 @@ class MembershipButton extends Widget
         return [
             'requestMembership' => [
                 'title' => Yii::t('SpaceModule.base', 'Join'),
-                'url' => $this->space->createUrl('/space/membership/request-membership-form', ['options' => Json::encode($this->options)]),
+                'url' => $this->space->createUrl('/space/membership/request-membership-form', empty($this->options) ? [] : ['options' => Json::encode($this->options)]),
                 'attrs' => [
                     'class' => 'btn btn-info',
                     'data-space-request-membership' => $this->space->id,
@@ -47,7 +47,6 @@ class MembershipButton extends Widget
             ],
             'becomeMember' => [
                 'title' => Yii::t('SpaceModule.base', 'Join'),
-                'mode' => 'ajax', // 'ajax' - to use data-action-* options for AJAX request, 'link' - to use button as simple <a> link
                 'url' => '#',
                 'attrs' => [
                     'data-action-click' => 'content.container.relationship',
@@ -60,6 +59,7 @@ class MembershipButton extends Widget
             ],
             'acceptInvite' => [
                 'title' => Yii::t('SpaceModule.base', 'Accept Invite'),
+                'url' => '#',
                 'attrs' => [
                     'data-action-click' => 'content.container.relationship',
                     'data-action-url' => $this->space->createUrl('/space/membership/invite-accept'),
@@ -72,6 +72,7 @@ class MembershipButton extends Widget
             ],
             'declineInvite' => [
                 'title' => Yii::t('SpaceModule.base', 'Decline Invite'),
+                'url' => '#',
                 'attrs' => [
                     'data-action-click' => 'content.container.relationship',
                     'data-action-url' => $this->space->createUrl('/space/membership/revoke-membership'),
@@ -81,10 +82,11 @@ class MembershipButton extends Widget
             ],
             'cancelPendingMembership' => [
                 'title' => '<span class="glyphicon glyphicon-time"></span>&nbsp;&nbsp;' . Yii::t('SpaceModule.base', 'Pending'),
+                'url' => '#',
                 'attrs' => [
                     'data-action-click' => 'content.container.relationship',
                     'data-action-url' => $this->space->createUrl('/space/membership/revoke-membership'),
-                    'data-action-confirm' => Yii::t('SpaceModule.base', 'Would you like to withdraw your request to join Space {spaceName}?', ['{spaceName}' => '<strong>' . $this->space->getDisplayName() . '</strong>']),
+                    'data-action-confirm' => Yii::t('SpaceModule.base', 'Would you like to withdraw your request to join Space {spaceName}?', ['{spaceName}' => '<strong>' . Html::encode($this->space->getDisplayName()) . '</strong>']),
                     'data-button-options' => Json::encode($this->options),
                     'data-ui-loader' => '',
                     'class' => 'btn btn-info active',
@@ -93,10 +95,13 @@ class MembershipButton extends Widget
             'cancelMembership' => [
                 'visible' => false,
                 'title' => '<span class="glyphicon glyphicon-ok"></span>&nbsp;&nbsp;' . Yii::t('SpaceModule.base', 'Member'),
+                'url' => '#',
                 'attrs' => [
                     'data-action-click' => 'content.container.relationship',
                     'data-action-url' => $this->space->createUrl('/space/membership/revoke-membership'),
-                    'data-action-confirm' => Yii::t('SpaceModule.base', 'Would you like to end your membership in Space {spaceName}?', ['{spaceName}' => '<strong>' . $this->space->getDisplayName() . '</strong>']),
+                    'data-action-confirm-header' => Yii::t('SpaceModule.base', '<strong>Leave</strong> Space'),
+                    'data-action-confirm' => Yii::t('SpaceModule.base', 'Would you like to end your membership in Space {spaceName}?', ['{spaceName}' => '<strong>' . Html::encode($this->space->getDisplayName()) . '</strong>']),
+                    'data-action-confirm-text' => Yii::t('SpaceModule.base', 'Leave'),
                     'data-button-options' => Json::encode($this->options),
                     'data-ui-loader' => '',
                     'class' => 'btn btn-info active',
@@ -122,7 +127,7 @@ class MembershipButton extends Widget
             $defaultOptions = $this->getDefaultOptions();
         }
 
-        return ArrayHelper::merge($defaultOptions, $this->options);
+        return $this->prepareButtonOptions(ArrayHelper::merge($defaultOptions, $this->options));
     }
 
     /**
@@ -130,22 +135,33 @@ class MembershipButton extends Widget
      */
     public function run()
     {
-        $options = $this->getOptions();
-
-        if ($options['becomeMember']['mode'] == 'link') {
-            // Switch button "Join" to link mode
-            $options['becomeMember']['url'] = $options['becomeMember']['attrs']['data-action-url'];
-            $options['becomeMember']['attrs']['data-method'] = 'POST';
-            unset($options['becomeMember']['attrs']['data-action-click']);
-            unset($options['becomeMember']['attrs']['data-action-url']);
+        if ($this->space->isBlockedForUser()) {
+            return '';
         }
 
         return $this->render('membershipButton', [
             'space' => $this->space,
             'membership' => $this->space->getMembership(),
-            'options' => $options,
+            'options' => $this->getOptions(),
             'canCancelMembership' => !$this->space->isSpaceOwner() && $this->space->canLeave(),
         ]);
+    }
+
+    private function prepareButtonOptions(array $options): array
+    {
+        foreach ($options as $b => $button) {
+            if (isset($button['mode']) && $button['mode'] === 'link' && isset($button['attrs']['data-action-url'])) {
+                // Switch button to link mode
+                $button['url'] = $button['attrs']['data-action-url'];
+                $button['attrs']['data-method'] = $button['mode_method'] ?? 'POST';
+                unset($button['attrs']['data-action-click']);
+                unset($button['attrs']['data-action-url']);
+                unset($button['attrs']['data-button-options']);
+                $options[$b] = $button;
+            }
+        }
+
+        return $options;
     }
 
 }
